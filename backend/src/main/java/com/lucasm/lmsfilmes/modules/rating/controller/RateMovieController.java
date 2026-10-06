@@ -51,13 +51,10 @@ public class RateMovieController {
         return ResponseEntity.ok(rateMovieService.getRatedMoviesPaged(authentication.getName(), pageable, minRating, maxRating, title));
     }
 
-    @GetMapping("/{movieId}")
+    @GetMapping("/{movieId:[0-9]+}")
     public ResponseEntity<?> getMovieRating(
             @PathVariable String movieId,
             Authentication authentication) {
-        if ("user".equalsIgnoreCase(movieId)) {
-            return ResponseEntity.ok(rateMovieService.getRatedMovies(authentication.getName()));
-        }
         RatingMovieResponseDTO dto = rateMovieService.getMovieRating(movieId, authentication.getName());
         return ResponseEntity.ok(dto);
     }

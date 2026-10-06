@@ -26,4 +26,14 @@ public class RatingSerieResponseDTO implements Serializable {
     private Integer totalEpisodes;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("ratedAt")
+    public String getRatedAt() {
+        return createdAt != null ? createdAt.toString() : null;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("poster_path")
+    public String getPosterPathSnake() {
+        return posterPath;
+    }
 }

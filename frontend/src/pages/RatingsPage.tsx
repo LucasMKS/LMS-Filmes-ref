@@ -35,27 +35,30 @@ export const RatingsPage: React.FC = () => {
         ratingApi.getUserSerieRatings(),
       ]);
 
-      const loadedM = await Promise.all(
-        mRes.data.map(async (item) => {
-          try {
-            const d = await movieApi.getDetails(item.movieId);
-            return { ...item, details: d.data };
-          } catch {
-            return item;
-          }
-        })
-      );
+      const movieIds = (mRes.data || []).map((item) => item.movieId).filter(Boolean);
+      const serieIds = (sRes.data || []).map((item) => item.serieId).filter(Boolean);
 
-      const loadedS = await Promise.all(
-        sRes.data.map(async (item) => {
-          try {
-            const d = await serieApi.getDetails(item.serieId);
-            return { ...item, details: d.data };
-          } catch {
-            return item;
-          }
-        })
-      );
+      const [moviesBatchRes, seriesBatchRes] = await Promise.all([
+        movieIds.length
+          ? movieApi.getBatch(movieIds).catch(() => ({ data: {} as Record<string, TmdbMovie> }))
+          : Promise.resolve({ data: {} as Record<string, TmdbMovie> }),
+        serieIds.length
+          ? serieApi.getBatch(serieIds).catch(() => ({ data: {} as Record<string, TmdbSerie> }))
+          : Promise.resolve({ data: {} as Record<string, TmdbSerie> }),
+      ]);
+
+      const moviesBatch = moviesBatchRes.data || {};
+      const seriesBatch = seriesBatchRes.data || {};
+
+      const loadedM = (mRes.data || []).map((item) => ({
+        ...item,
+        details: moviesBatch[String(item.movieId)] || undefined,
+      }));
+
+      const loadedS = (sRes.data || []).map((item) => ({
+        ...item,
+        details: seriesBatch[String(item.serieId)] || undefined,
+      }));
 
       setMovieRatings(loadedM);
       setSerieRatings(loadedS);

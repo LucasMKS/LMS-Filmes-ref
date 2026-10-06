@@ -65,8 +65,8 @@ public class FavoriteMovieController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Movie>> getFavoriteMovies(Authentication authentication) {
-        List<Movie> list = favoriteMovieService.getFavoriteMovies(authentication.getName());
+    public ResponseEntity<List<com.lucasm.lmsfilmes.modules.favorite.dto.FavoriteMovieResponseDTO>> getFavoriteMovies(Authentication authentication) {
+        List<com.lucasm.lmsfilmes.modules.favorite.dto.FavoriteMovieResponseDTO> list = favoriteMovieService.getFavoriteMovies(authentication.getName());
         return ResponseEntity.ok(list);
     }
 }

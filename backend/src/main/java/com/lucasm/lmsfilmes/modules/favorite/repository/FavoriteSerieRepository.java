@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface FavoriteSerieRepository extends JpaRepository<FavoriteSerie, Long> {
     Optional<FavoriteSerie> findByUserIdAndSerieId(Long userId, String serieId);
     List<FavoriteSerie> findByUserIdAndFavoriteTrue(Long userId);
+    List<FavoriteSerie> findByUserId(Long userId);
     List<FavoriteSerie> findByUserIdAndSerieIdIn(Long userId, Collection<String> serieIds);
     boolean existsByUserIdAndSerieIdAndFavoriteTrue(Long userId, String serieId);
 }

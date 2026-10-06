@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface FavoriteActorRepository extends JpaRepository<FavoriteActor, Long> {
     List<FavoriteActor> findByUserIdOrderByCreatedAtDesc(Long userId);
+    List<FavoriteActor> findByUserId(Long userId);
     Optional<FavoriteActor> findByUserIdAndActorId(Long userId, String actorId);
     boolean existsByUserIdAndActorId(Long userId, String actorId);
     void deleteByUserIdAndActorId(Long userId, String actorId);

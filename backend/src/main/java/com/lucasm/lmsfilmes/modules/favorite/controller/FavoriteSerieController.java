@@ -65,8 +65,8 @@ public class FavoriteSerieController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Serie>> getFavoriteSeries(Authentication authentication) {
-        List<Serie> list = favoriteSerieService.getFavoriteSeries(authentication.getName());
+    public ResponseEntity<List<com.lucasm.lmsfilmes.modules.favorite.dto.FavoriteSerieResponseDTO>> getFavoriteSeries(Authentication authentication) {
+        List<com.lucasm.lmsfilmes.modules.favorite.dto.FavoriteSerieResponseDTO> list = favoriteSerieService.getFavoriteSeries(authentication.getName());
         return ResponseEntity.ok(list);
     }
 }

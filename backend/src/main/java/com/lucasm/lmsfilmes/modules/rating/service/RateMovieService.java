@@ -136,10 +136,25 @@ public class RateMovieService {
     }
 
     private List<RatingMovieResponseDTO> enrichWithCatalog(List<RatingMovie> ratings) {
-        if (ratings.isEmpty()) return List.of();
-        List<String> movieIds = ratings.stream().map(RatingMovie::getMovieId).toList();
-        Map<String, Movie> catalogMap = catalogMovieRepository.findByMovieIdIn(movieIds).stream()
-                .collect(Collectors.toMap(Movie::getMovieId, Function.identity(), (a, b) -> a));
+        if (ratings == null || ratings.isEmpty()) return List.of();
+        List<String> movieIds = ratings.stream()
+                .map(RatingMovie::getMovieId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<String, Movie> catalogMap = new HashMap<>();
+        if (!movieIds.isEmpty()) {
+            try {
+                for (Movie m : catalogMovieRepository.findByMovieIdIn(movieIds)) {
+                    if (m != null && m.getMovieId() != null) {
+                        catalogMap.put(m.getMovieId(), m);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Erro ao buscar catalogo de filmes para avaliacoes: {}", e.getMessage());
+            }
+        }
 
         return ratings.stream().map(r -> {
             Movie cat = catalogMap.get(r.getMovieId());

@@ -25,7 +25,7 @@ public class FavoriteActor implements Serializable {
     @Column(name = "actor_id", nullable = false)
     private String actorId;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name")
     private String name;
 
     @Column(name = "profile_path")

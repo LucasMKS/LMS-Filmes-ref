@@ -160,10 +160,25 @@ public class RateSerieService {
     }
 
     private List<RatingSerieResponseDTO> enrichWithCatalog(List<RatingSerie> ratings) {
-        if (ratings.isEmpty()) return List.of();
-        List<String> serieIds = ratings.stream().map(RatingSerie::getSerieId).toList();
-        Map<String, Serie> catalogMap = catalogSerieRepository.findBySerieIdIn(serieIds).stream()
-                .collect(Collectors.toMap(Serie::getSerieId, Function.identity(), (a, b) -> a));
+        if (ratings == null || ratings.isEmpty()) return List.of();
+        List<String> serieIds = ratings.stream()
+                .map(RatingSerie::getSerieId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<String, Serie> catalogMap = new HashMap<>();
+        if (!serieIds.isEmpty()) {
+            try {
+                for (Serie s : catalogSerieRepository.findBySerieIdIn(serieIds)) {
+                    if (s != null && s.getSerieId() != null) {
+                        catalogMap.put(s.getSerieId(), s);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Erro ao buscar catalogo de séries para avaliacoes: {}", e.getMessage());
+            }
+        }
 
         return ratings.stream().map(r -> {
             Serie cat = catalogMap.get(r.getSerieId());

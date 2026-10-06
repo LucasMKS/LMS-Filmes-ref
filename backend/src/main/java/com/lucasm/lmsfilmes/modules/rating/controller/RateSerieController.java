@@ -51,13 +51,10 @@ public class RateSerieController {
         return ResponseEntity.ok(rateSerieService.getRatedSeriesPaged(authentication.getName(), pageable, minRating, maxRating, title));
     }
 
-    @GetMapping("/{serieId}")
+    @GetMapping("/{serieId:[0-9]+}")
     public ResponseEntity<?> getSerieRating(
             @PathVariable String serieId,
             Authentication authentication) {
-        if ("user".equalsIgnoreCase(serieId)) {
-            return ResponseEntity.ok(rateSerieService.getRatedSeries(authentication.getName()));
-        }
         RatingSerieResponseDTO dto = rateSerieService.getSerieRating(serieId, authentication.getName());
         return ResponseEntity.ok(dto);
     }

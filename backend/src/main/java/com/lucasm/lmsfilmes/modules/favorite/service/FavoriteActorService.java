@@ -22,7 +22,12 @@ public class FavoriteActorService {
     public List<FavoriteActor> getUserActors(String email) {
         Long userId = authService.getUserIdByIdentifier(email);
         if (userId == null) return List.of();
-        return favoriteActorRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        try {
+            return favoriteActorRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        } catch (Exception e) {
+            log.warn("Erro ao buscar atores favoritos ordenados por createdAt: {}. Tentando busca simples.", e.getMessage());
+            return favoriteActorRepository.findByUserId(userId);
+        }
     }
 
     @Transactional

@@ -86,6 +86,10 @@ export const movieApi = {
     apiClient.get<TmdbPage<TmdbMovie>>(`/movies/search?query=${encodeURIComponent(query)}&page=${page}`),
   getDetails: async (id: number) => apiClient.get<TmdbMovie>(`/movies/${id}`),
   getRecommendations: async (id: number) => apiClient.get<TmdbPage<TmdbMovie>>(`/movies/${id}/recommendations`),
+  getBatch: async (ids: (number | string)[]) => {
+    if (!ids || ids.length === 0) return { data: {} as Record<string, TmdbMovie> };
+    return apiClient.get<Record<string, TmdbMovie>>(`/movies/batch?ids=${ids.join(',')}`);
+  },
 };
 export const moviesApi = movieApi;
 
@@ -101,6 +105,10 @@ export const serieApi = {
   getSeasonDetails: async (id: number, seasonNumber: number) =>
     apiClient.get<TmdbSeason>(`/series/${id}/season/${seasonNumber}`),
   getRecommendations: async (id: number) => apiClient.get<TmdbPage<TmdbSerie>>(`/series/${id}/recommendations`),
+  getBatch: async (ids: (number | string)[]) => {
+    if (!ids || ids.length === 0) return { data: {} as Record<string, TmdbSerie> };
+    return apiClient.get<Record<string, TmdbSerie>>(`/series/batch?ids=${ids.join(',')}`);
+  },
 };
 export const seriesApi = serieApi;
 

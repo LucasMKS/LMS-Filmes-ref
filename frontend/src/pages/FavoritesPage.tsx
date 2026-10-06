@@ -27,41 +27,41 @@ export const FavoritesPage: React.FC = () => {
         favoriteApi.getUserActors(),
       ]);
 
-      const loadedMovies = await Promise.all(
-        moviesRes.data.map(async (f) => {
-          try {
-            const m = await movieApi.getDetails(f.movieId);
-            return m.data;
-          } catch {
-            return null;
-          }
-        })
-      );
+      const movieIds = (moviesRes.data || []).map((f: any) => f.movieId || f.id).filter(Boolean);
+      const serieIds = (seriesRes.data || []).map((s: any) => s.serieId || s.id).filter(Boolean);
 
-      const loadedSeries = await Promise.all(
-        seriesRes.data.map(async (f) => {
-          try {
-            const s = await serieApi.getDetails(f.serieId);
-            return s.data;
-          } catch {
-            return null;
-          }
-        })
-      );
+      const [moviesBatchRes, seriesBatchRes, loadedActors] = await Promise.all([
+        movieIds.length
+          ? movieApi.getBatch(movieIds).catch(() => ({ data: {} as Record<string, TmdbMovie> }))
+          : Promise.resolve({ data: {} as Record<string, TmdbMovie> }),
+        serieIds.length
+          ? serieApi.getBatch(serieIds).catch(() => ({ data: {} as Record<string, TmdbSerie> }))
+          : Promise.resolve({ data: {} as Record<string, TmdbSerie> }),
+        Promise.all(
+          (actorsRes.data || []).map(async (f: any) => {
+            try {
+              const a = await actorApi.getDetails(f.actorId || f.id);
+              return a.data;
+            } catch {
+              return null;
+            }
+          })
+        ),
+      ]);
 
-      const loadedActors = await Promise.all(
-        actorsRes.data.map(async (f) => {
-          try {
-            const a = await actorApi.getDetails(f.actorId);
-            return a.data;
-          } catch {
-            return null;
-          }
-        })
-      );
+      const moviesBatch = moviesBatchRes.data || {};
+      const seriesBatch = seriesBatchRes.data || {};
 
-      setFavoriteMovies(loadedMovies.filter(Boolean) as TmdbMovie[]);
-      setFavoriteSeries(loadedSeries.filter(Boolean) as TmdbSerie[]);
+      const loadedMovies = movieIds
+        .map((id) => moviesBatch[String(id)])
+        .filter(Boolean) as TmdbMovie[];
+
+      const loadedSeries = serieIds
+        .map((id) => seriesBatch[String(id)])
+        .filter(Boolean) as TmdbSerie[];
+
+      setFavoriteMovies(loadedMovies);
+      setFavoriteSeries(loadedSeries);
       setFavoriteActors(loadedActors.filter(Boolean) as TmdbPerson[]);
     } catch (err) {
       toast.error('Erro ao carregar favoritos');

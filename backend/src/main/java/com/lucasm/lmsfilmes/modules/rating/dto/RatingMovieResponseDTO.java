@@ -24,4 +24,14 @@ public class RatingMovieResponseDTO implements Serializable {
     private Integer rewatchCount;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("ratedAt")
+    public String getRatedAt() {
+        return createdAt != null ? createdAt.toString() : null;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("poster_path")
+    public String getPosterPathSnake() {
+        return posterPath;
+    }
 }

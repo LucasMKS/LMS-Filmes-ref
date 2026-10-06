@@ -25,7 +25,11 @@ public class FavoriteSerie implements Serializable {
     private String serieId;
 
     @Column(name = "is_favorite")
-    private boolean favorite = true;
+    private Boolean favorite = true;
+
+    public boolean isFavorite() {
+        return Boolean.TRUE.equals(favorite);
+    }
 
     @Column(name = "mongo_id")
     private String mongoId;

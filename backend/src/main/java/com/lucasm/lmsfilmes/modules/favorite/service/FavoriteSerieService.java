@@ -86,19 +86,51 @@ public class FavoriteSerieService {
         return map;
     }
 
-    public List<Serie> getFavoriteSeries(String email) {
+    public List<com.lucasm.lmsfilmes.modules.favorite.dto.FavoriteSerieResponseDTO> getFavoriteSeries(String email) {
         Long userId = authService.getUserIdByIdentifier(email);
         if (userId == null) return List.of();
 
-        List<FavoriteSerie> favs = favoriteSerieRepository.findByUserIdAndFavoriteTrue(userId);
-        if (favs.isEmpty()) return List.of();
+        List<FavoriteSerie> favs;
+        try {
+            favs = favoriteSerieRepository.findByUserIdAndFavoriteTrue(userId);
+        } catch (Exception e) {
+            log.warn("Erro ao buscar séries favoritas ativas: {}. Usando busca simples por userId.", e.getMessage());
+            favs = favoriteSerieRepository.findByUserId(userId);
+        }
+        if (favs == null || favs.isEmpty()) return List.of();
 
-        List<String> serieIds = favs.stream().map(FavoriteSerie::getSerieId).toList();
-        Map<String, Serie> catalogMap = catalogSerieRepository.findBySerieIdIn(serieIds).stream()
-                .collect(Collectors.toMap(Serie::getSerieId, Function.identity(), (a, b) -> a));
+        List<String> serieIds = favs.stream()
+                .map(FavoriteSerie::getSerieId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
 
-        return serieIds.stream()
-                .map(id -> catalogMap.getOrDefault(id, new Serie(id, "Série " + id, null)))
+        Map<String, Serie> catalogMap = new HashMap<>();
+        if (!serieIds.isEmpty()) {
+            try {
+                for (Serie s : catalogSerieRepository.findBySerieIdIn(serieIds)) {
+                    if (s != null && s.getSerieId() != null) {
+                        catalogMap.put(s.getSerieId(), s);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Erro ao buscar séries do catalogo: {}", e.getMessage());
+            }
+        }
+
+        return favs.stream()
+                .filter(f -> f.getSerieId() != null && (f.getFavorite() == null || f.isFavorite()))
+                .map(f -> {
+                    Serie cat = catalogMap.get(f.getSerieId());
+                    return com.lucasm.lmsfilmes.modules.favorite.dto.FavoriteSerieResponseDTO.builder()
+                            .id(f.getId())
+                            .userId(f.getUserId())
+                            .serieId(f.getSerieId())
+                            .title(cat != null ? cat.getTitle() : "Série " + f.getSerieId())
+                            .posterPath(cat != null ? cat.getPosterPath() : null)
+                            .favorite(f.getFavorite())
+                            .build();
+                })
                 .toList();
     }
 }

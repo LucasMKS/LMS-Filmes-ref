@@ -25,28 +25,31 @@ export const WatchlistPage: React.FC = () => {
         watchlistApi.getUserSeries(),
       ]);
 
-      // Carrega detalhes básicos via TMDB para obter poster e título
-      const loadedMovies = await Promise.all(
-        moviesRes.data.map(async (item) => {
-          try {
-            const detail = await movieApi.getDetails(item.movieId);
-            return { ...item, details: detail.data };
-          } catch {
-            return item;
-          }
-        })
-      );
+      // Carrega detalhes via endpoint batch em paralelo para carregar instantaneamente
+      const movieIds = moviesRes.data.map((m) => m.movieId).filter(Boolean);
+      const serieIds = seriesRes.data.map((s) => s.serieId).filter(Boolean);
 
-      const loadedSeries = await Promise.all(
-        seriesRes.data.map(async (item) => {
-          try {
-            const detail = await serieApi.getDetails(item.serieId);
-            return { ...item, details: detail.data };
-          } catch {
-            return item;
-          }
-        })
-      );
+      const [moviesBatchRes, seriesBatchRes] = await Promise.all([
+        movieIds.length
+          ? movieApi.getBatch(movieIds).catch(() => ({ data: {} as Record<string, TmdbMovie> }))
+          : Promise.resolve({ data: {} as Record<string, TmdbMovie> }),
+        serieIds.length
+          ? serieApi.getBatch(serieIds).catch(() => ({ data: {} as Record<string, TmdbSerie> }))
+          : Promise.resolve({ data: {} as Record<string, TmdbSerie> }),
+      ]);
+
+      const moviesBatch = moviesBatchRes.data || {};
+      const seriesBatch = seriesBatchRes.data || {};
+
+      const loadedMovies = moviesRes.data.map((item) => ({
+        ...item,
+        details: moviesBatch[String(item.movieId)] || undefined,
+      }));
+
+      const loadedSeries = seriesRes.data.map((item) => ({
+        ...item,
+        details: seriesBatch[String(item.serieId)] || undefined,
+      }));
 
       setMovieItems(loadedMovies);
       setSerieItems(loadedSeries);

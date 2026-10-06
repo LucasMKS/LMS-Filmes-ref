@@ -86,19 +86,51 @@ public class FavoriteMovieService {
         return map;
     }
 
-    public List<Movie> getFavoriteMovies(String email) {
+    public List<com.lucasm.lmsfilmes.modules.favorite.dto.FavoriteMovieResponseDTO> getFavoriteMovies(String email) {
         Long userId = authService.getUserIdByIdentifier(email);
         if (userId == null) return List.of();
 
-        List<FavoriteMovie> favs = favoriteMovieRepository.findByUserIdAndFavoriteTrue(userId);
-        if (favs.isEmpty()) return List.of();
+        List<FavoriteMovie> favs;
+        try {
+            favs = favoriteMovieRepository.findByUserIdAndFavoriteTrue(userId);
+        } catch (Exception e) {
+            log.warn("Erro ao buscar favoritos ativos: {}. Usando busca simples por userId.", e.getMessage());
+            favs = favoriteMovieRepository.findByUserId(userId);
+        }
+        if (favs == null || favs.isEmpty()) return List.of();
 
-        List<String> movieIds = favs.stream().map(FavoriteMovie::getMovieId).toList();
-        Map<String, Movie> catalogMap = catalogMovieRepository.findByMovieIdIn(movieIds).stream()
-                .collect(Collectors.toMap(Movie::getMovieId, Function.identity(), (a, b) -> a));
+        List<String> movieIds = favs.stream()
+                .map(FavoriteMovie::getMovieId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
 
-        return movieIds.stream()
-                .map(id -> catalogMap.getOrDefault(id, new Movie(id, "Filme " + id, null)))
+        Map<String, Movie> catalogMap = new HashMap<>();
+        if (!movieIds.isEmpty()) {
+            try {
+                for (Movie m : catalogMovieRepository.findByMovieIdIn(movieIds)) {
+                    if (m != null && m.getMovieId() != null) {
+                        catalogMap.put(m.getMovieId(), m);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Erro ao buscar filmes do catalogo: {}", e.getMessage());
+            }
+        }
+
+        return favs.stream()
+                .filter(f -> f.getMovieId() != null && (f.getFavorite() == null || f.isFavorite()))
+                .map(f -> {
+                    Movie cat = catalogMap.get(f.getMovieId());
+                    return com.lucasm.lmsfilmes.modules.favorite.dto.FavoriteMovieResponseDTO.builder()
+                            .id(f.getId())
+                            .userId(f.getUserId())
+                            .movieId(f.getMovieId())
+                            .title(cat != null ? cat.getTitle() : "Filme " + f.getMovieId())
+                            .posterPath(cat != null ? cat.getPosterPath() : null)
+                            .favorite(f.getFavorite())
+                            .build();
+                })
                 .toList();
     }
 }
