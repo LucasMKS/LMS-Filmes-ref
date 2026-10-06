@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { favoriteApi, movieApi, serieApi, actorApi } from '../services/api';
 import { TmdbMovie, TmdbSerie, TmdbPerson } from '../types';
 import { MediaCard } from '../components/MediaCard';
-import { Heart, Film, Tv, Users, Trash2, Search, X, ChevronDown } from 'lucide-react';
+import { Heart, Film, Tv, Users, Trash2, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const FavoritesPage: React.FC = () => {
@@ -11,18 +11,28 @@ export const FavoritesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(24);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'split' | 'unified'>('split');
 
   const [favoriteMovies, setFavoriteMovies] = useState<TmdbMovie[]>([]);
   const [favoriteSeries, setFavoriteSeries] = useState<TmdbSerie[]>([]);
   const [favoriteActors, setFavoriteActors] = useState<TmdbPerson[]>([]);
 
   useEffect(() => {
+    const saved = localStorage.getItem('lms_favoritos_view_mode');
+    if (saved === 'split' || saved === 'unified') {
+      setViewMode(saved);
+    }
     loadFavorites();
   }, []);
 
+  const handleViewModeChange = (mode: 'split' | 'unified') => {
+    setViewMode(mode);
+    localStorage.setItem('lms_favoritos_view_mode', mode);
+  };
+
   useEffect(() => {
     setVisibleLimit(24);
-  }, [searchQuery, activeTab]);
+  }, [searchQuery, activeTab, viewMode]);
 
   const loadFavorites = async () => {
     setLoading(true);
@@ -69,7 +79,7 @@ export const FavoritesPage: React.FC = () => {
       setFavoriteMovies(loadedMovies);
       setFavoriteSeries(loadedSeries);
       setFavoriteActors(loadedActors.filter(Boolean) as TmdbPerson[]);
-    } catch (err) {
+    } catch {
       toast.error('Erro ao carregar favoritos');
     } finally {
       setLoading(false);
@@ -120,7 +130,7 @@ export const FavoritesPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-black text-white flex items-center gap-2">
-                <Heart className="w-6 h-6 text-red-500 fill-red-500" />
+                <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
                 Meus Favoritos
               </h1>
               <p className="text-xs text-zinc-400 mt-1">
@@ -136,7 +146,7 @@ export const FavoritesPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar em favoritos..."
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-9 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-[#14141c] border border-white/[0.08] rounded-xl pl-9 pr-9 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-pink-500 transition-colors"
               />
               {searchQuery && (
                 <button
@@ -150,41 +160,154 @@ export const FavoritesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Abas */}
-          <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs w-fit">
-            <button
-              onClick={() => setActiveTab('movies')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                activeTab === 'movies' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Film className="w-3.5 h-3.5" /> Filmes ({filteredMovies.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('series')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                activeTab === 'series' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('actors')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                activeTab === 'actors' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" /> Atores ({filteredActors.length})
-            </button>
+          {/* Abas e Seletor de Layout */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+            <div className="flex items-center bg-[#14141c] p-1 rounded-xl border border-white/[0.06] text-xs">
+              <button
+                onClick={() => setActiveTab('movies')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                  activeTab === 'movies' ? 'bg-purple-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Film className="w-3.5 h-3.5" /> Filmes ({filteredMovies.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('series')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                  activeTab === 'series' ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('actors')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                  activeTab === 'actors' ? 'bg-amber-500 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" /> Atores ({filteredActors.length})
+              </button>
+            </div>
+
+            {/* Layout Toggle (Desktop - apenas quando não estiver em Atores) */}
+            {activeTab !== 'actors' && (
+              <div className="hidden lg:flex items-center gap-1 bg-[#14141c] p-1 rounded-xl border border-white/[0.06]">
+                <button
+                  onClick={() => handleViewModeChange('split')}
+                  title="Visão Lado a Lado (Filmes na Esquerda | Séries na Direita)"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    viewMode === 'split'
+                      ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30'
+                      : 'text-zinc-400 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <Columns2 className="w-3.5 h-3.5" />
+                  <span>Lado a Lado</span>
+                </button>
+                <button
+                  onClick={() => handleViewModeChange('unified')}
+                  title="Grid Padrão por Aba"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    viewMode === 'unified'
+                      ? 'bg-white/10 text-white border border-white/10'
+                      : 'text-zinc-400 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>Grid Padrão</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : viewMode === 'split' && activeTab !== 'actors' ? (
+          /* MODO LADO A LADO (FILMES X SÉRIES) */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Coluna Filmes */}
+            <div className="bg-[#14141c]/40 border border-white/[0.06] rounded-2xl p-5 shadow-xl flex flex-col">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                    <Film className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-white text-base">Filmes Favoritos</h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold">
+                  {filteredMovies.length}
+                </span>
+              </div>
+              {filteredMovies.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-12 text-center border border-dashed border-white/[0.06] rounded-xl bg-[#0a0a0f]/30">
+                  <Film className="w-8 h-8 text-white/15 mb-2" />
+                  <p className="text-white/40 text-sm font-medium">Nenhum filme favorito</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {filteredMovies.slice(0, visibleLimit).map((movie) => (
+                    <MediaCard
+                      key={`split-m-${movie.id}`}
+                      id={movie.id}
+                      title={movie.title}
+                      posterPath={movie.poster_path}
+                      voteAverage={movie.vote_average}
+                      releaseDate={movie.release_date}
+                      type="movie"
+                      isFavoriteInitial={true}
+                      onFavoriteChange={(id, isFav) => {
+                        if (!isFav) setFavoriteMovies((prev) => prev.filter((m) => m.id !== id));
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Coluna Séries */}
+            <div className="bg-[#14141c]/40 border border-white/[0.06] rounded-2xl p-5 shadow-xl flex flex-col">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400">
+                    <Tv className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-white text-base">Séries Favoritas</h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-bold">
+                  {filteredSeries.length}
+                </span>
+              </div>
+              {filteredSeries.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-12 text-center border border-dashed border-white/[0.06] rounded-xl bg-[#0a0a0f]/30">
+                  <Tv className="w-8 h-8 text-white/15 mb-2" />
+                  <p className="text-white/40 text-sm font-medium">Nenhuma série favorita</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {filteredSeries.slice(0, visibleLimit).map((serie) => (
+                    <MediaCard
+                      key={`split-s-${serie.id}`}
+                      id={serie.id}
+                      title={serie.name}
+                      posterPath={serie.poster_path}
+                      voteAverage={serie.vote_average}
+                      releaseDate={serie.first_air_date}
+                      type="serie"
+                      isFavoriteInitial={true}
+                      onFavoriteChange={(id, isFav) => {
+                        if (!isFav) setFavoriteSeries((prev) => prev.filter((s) => s.id !== id));
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : totalCount === 0 ? (
-          <div className="text-center py-20 bg-zinc-900/30 rounded-2xl border border-zinc-800">
+          <div className="text-center py-20 bg-[#14141c]/40 rounded-2xl border border-white/[0.06]">
             {activeTab === 'movies' && <Film className="w-12 h-12 text-zinc-600 mx-auto mb-3" />}
             {activeTab === 'series' && <Tv className="w-12 h-12 text-zinc-600 mx-auto mb-3" />}
             {activeTab === 'actors' && <Users className="w-12 h-12 text-zinc-600 mx-auto mb-3" />}
@@ -239,9 +362,9 @@ export const FavoritesPage: React.FC = () => {
                 {(visibleList as TmdbPerson[]).map((actor) => (
                   <div
                     key={actor.id}
-                    className="group relative flex flex-col rounded-xl overflow-hidden bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-all"
+                    className="group relative flex flex-col rounded-2xl overflow-hidden bg-[#14141c] border border-white/[0.06] hover:border-purple-500/20 hover:-translate-y-1.5 transition-all duration-300 shadow-xl"
                   >
-                    <Link to={`/atores/${actor.id}`} className="aspect-[2/3] w-full overflow-hidden bg-zinc-950">
+                    <Link to={`/atores/${actor.id}`} className="aspect-[2/3] w-full overflow-hidden bg-white/5">
                       <img
                         src={
                           actor.profile_path
@@ -249,10 +372,10 @@ export const FavoritesPage: React.FC = () => {
                             : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300'
                         }
                         alt={actor.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     </Link>
-                    <div className="p-3 flex items-center justify-between">
+                    <div className="p-3 flex items-center justify-between border-t border-white/[0.05]">
                       <Link to={`/atores/${actor.id}`} className="font-semibold text-xs text-zinc-200 hover:text-amber-400 truncate">
                         {actor.name}
                       </Link>
@@ -274,7 +397,7 @@ export const FavoritesPage: React.FC = () => {
               <div className="flex justify-center mt-12">
                 <button
                   onClick={() => setVisibleLimit((prev) => prev + 24)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-amber-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#14141c] border border-white/[0.08] hover:border-pink-400 text-pink-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm"
                 >
                   <ChevronDown className="w-4 h-4" />
                   Carregar mais favoritos ({totalCount - visibleLimit} restantes)

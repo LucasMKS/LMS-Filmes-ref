@@ -137,6 +137,7 @@ public class MovieService {
         return fetchPaginatedData("/movie/" + movieId + "/recommendations");
     }
 
+    @Cacheable(value = "moviesSearch", key = "#query + '_' + #page")
     public TmdbPageDTO<TmdbDTO> searchMovies(String query, int page) {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         String path = "/search/movie?query=" + encodedQuery + "&include_adult=false&page=" + page;
@@ -183,6 +184,7 @@ public class MovieService {
         }
     }
 
+    @Cacheable(value = "actorsSearch", key = "#query + '_' + #page")
     public TmdbPageDTO<TmdbPersonDTO> searchPeople(String query, int page) {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         String path = "/search/person?query=" + encodedQuery + "&include_adult=false&page=" + page;

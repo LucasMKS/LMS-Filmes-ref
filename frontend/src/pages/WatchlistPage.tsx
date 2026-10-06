@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { watchlistApi, movieApi, serieApi } from '../services/api';
 import { WatchlistMovie, WatchlistSerie, WatchlistStatus, TmdbMovie, TmdbSerie } from '../types';
 import { MediaCard } from '../components/MediaCard';
-import { Bookmark, Film, Tv, Filter, CheckCircle2, Search, X, ChevronDown } from 'lucide-react';
+import { Bookmark, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const WatchlistPage: React.FC = () => {
@@ -11,17 +11,27 @@ export const WatchlistPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(24);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'split' | 'unified'>('unified');
 
   const [movieItems, setMovieItems] = useState<(WatchlistMovie & { details?: TmdbMovie })[]>([]);
   const [serieItems, setSerieItems] = useState<(WatchlistSerie & { details?: TmdbSerie })[]>([]);
 
   useEffect(() => {
+    const saved = localStorage.getItem('lms_watchlist_view_mode');
+    if (saved === 'split' || saved === 'unified') {
+      setViewMode(saved);
+    }
     loadWatchlist();
   }, []);
 
+  const handleViewModeChange = (mode: 'split' | 'unified') => {
+    setViewMode(mode);
+    localStorage.setItem('lms_watchlist_view_mode', mode);
+  };
+
   useEffect(() => {
     setVisibleLimit(24);
-  }, [searchQuery, filterType, statusFilter]);
+  }, [searchQuery, filterType, statusFilter, viewMode]);
 
   const loadWatchlist = async () => {
     setLoading(true);
@@ -58,7 +68,7 @@ export const WatchlistPage: React.FC = () => {
 
       setMovieItems(loadedMovies);
       setSerieItems(loadedSeries);
-    } catch (err) {
+    } catch {
       toast.error('Erro ao carregar watchlist');
     } finally {
       setLoading(false);
@@ -157,8 +167,8 @@ export const WatchlistPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-black text-white flex items-center gap-2">
-                <Bookmark className="w-6 h-6 text-amber-400" />
-                Minha Watchlist ({totalCount})
+                <Bookmark className="w-6 h-6 text-emerald-400" />
+                Minha Watchlist ({movieItems.length + serieItems.length})
               </h1>
               <p className="text-xs text-zinc-400 mt-1">
                 Controle tudo o que você planeja ver, está assistindo ou já concluiu
@@ -173,7 +183,7 @@ export const WatchlistPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar por título na watchlist..."
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-9 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-[#14141c] border border-white/[0.08] rounded-xl pl-9 pr-9 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
               />
               {searchQuery && (
                 <button
@@ -187,57 +197,87 @@ export const WatchlistPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Filtros de Tipo e Status */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-800/60">
-            {/* Media Type Filter */}
-            <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
-              <button
-                onClick={() => setFilterType('all')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  filterType === 'all' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
-                }`}
+          {/* Filtros de Tipo, Status e Seletor de Layout */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Media Type Filter */}
+              <div className="flex items-center bg-[#14141c] p-1 rounded-xl border border-white/[0.06] text-xs">
+                <button
+                  onClick={() => setFilterType('all')}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                    filterType === 'all' ? 'bg-emerald-500 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setFilterType('movie')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                    filterType === 'movie' ? 'bg-purple-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Film className="w-3.5 h-3.5" /> Filmes ({filteredMovies.length})
+                </button>
+                <button
+                  onClick={() => setFilterType('serie')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                    filterType === 'serie' ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
+                </button>
+              </div>
+
+              {/* Status Filter */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-[#14141c] border border-white/[0.08] text-xs text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 font-medium"
               >
-                Todos
-              </button>
-              <button
-                onClick={() => setFilterType('movie')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  filterType === 'movie' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Film className="w-3.5 h-3.5" /> Filmes
-              </button>
-              <button
-                onClick={() => setFilterType('serie')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  filterType === 'serie' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Tv className="w-3.5 h-3.5" /> Séries
-              </button>
+                <option value="ALL">Todos os Status</option>
+                <option value="PLANNING">Planejo Assistir</option>
+                <option value="WATCHING">Assistindo</option>
+                <option value="COMPLETED">Concluído</option>
+                <option value="DROPPED">Abandonado</option>
+              </select>
             </div>
 
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500 font-medium"
-            >
-              <option value="ALL">Todos os Status</option>
-              <option value="PLANNING">Planejo Assistir</option>
-              <option value="WATCHING">Assistindo</option>
-              <option value="COMPLETED">Concluído</option>
-              <option value="DROPPED">Abandonado</option>
-            </select>
+            {/* Seletor de Visualização (Abas/Unificado vs Lado a Lado) */}
+            <div className="hidden lg:flex items-center gap-1 bg-[#14141c] p-1 rounded-xl border border-white/[0.06]">
+              <button
+                onClick={() => handleViewModeChange('split')}
+                title="Lado a Lado (Filmes na Esquerda | Séries na Direita)"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'split'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'text-zinc-400 hover:text-white border border-transparent'
+                }`}
+              >
+                <Columns2 className="w-3.5 h-3.5" />
+                <span>Lado a Lado</span>
+              </button>
+              <button
+                onClick={() => handleViewModeChange('unified')}
+                title="Grid Único"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'unified'
+                    ? 'bg-white/10 text-white border border-white/10'
+                    : 'text-zinc-400 hover:text-white border border-transparent'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Grid Único</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : totalCount === 0 ? (
-          <div className="text-center py-20 bg-zinc-900/30 rounded-2xl border border-zinc-800">
+        ) : filteredMovies.length === 0 && filteredSeries.length === 0 ? (
+          <div className="text-center py-20 bg-[#14141c]/50 rounded-2xl border border-white/[0.06]">
             <Bookmark className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-zinc-300">Nenhum título encontrado</h3>
             <p className="text-xs text-zinc-500 mt-1">
@@ -246,7 +286,111 @@ export const WatchlistPage: React.FC = () => {
                 : 'Explore o catálogo e adicione filmes ou séries para acompanhar!'}
             </p>
           </div>
+        ) : viewMode === 'split' ? (
+          /* MODO LADO A LADO (SPLIT VIEW) */
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Coluna da Esquerda: Filmes */}
+            <div className="bg-[#14141c]/40 border border-white/[0.06] rounded-2xl p-5 shadow-xl flex flex-col">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                    <Film className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-white text-base">Filmes na Watchlist</h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold">
+                  {filteredMovies.length}
+                </span>
+              </div>
+              {filteredMovies.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-12 text-center border border-dashed border-white/[0.06] rounded-xl bg-[#0a0a0f]/30">
+                  <Film className="w-8 h-8 text-white/15 mb-2" />
+                  <p className="text-white/40 text-sm font-medium">Nenhum filme encontrado</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {filteredMovies.slice(0, visibleLimit).map((item) => (
+                    <div key={`split-m-${item.movieId}`} className="flex flex-col gap-2">
+                      <MediaCard
+                        id={item.movieId}
+                        title={item.details?.title || `Filme #${item.movieId}`}
+                        posterPath={item.details?.poster_path || null}
+                        voteAverage={item.details?.vote_average || 0}
+                        releaseDate={item.details?.release_date}
+                        type="movie"
+                        watchlistStatusInitial={item.status}
+                        onWatchlistChange={(_, status) => {
+                          if (!status) handleRemoveMovie(item.movieId);
+                        }}
+                      />
+                      <select
+                        value={item.status}
+                        onChange={(e) => handleStatusChangeMovie(item.movieId, e.target.value)}
+                        className="w-full bg-[#14141c] border border-white/[0.08] text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-medium"
+                      >
+                        <option value="PLANNING">Planejo</option>
+                        <option value="WATCHING">Assistindo</option>
+                        <option value="COMPLETED">Concluído</option>
+                        <option value="DROPPED">Abandonado</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Coluna da Direita: Séries */}
+            <div className="bg-[#14141c]/40 border border-white/[0.06] rounded-2xl p-5 shadow-xl flex flex-col">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400">
+                    <Tv className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-white text-base">Séries na Watchlist</h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-bold">
+                  {filteredSeries.length}
+                </span>
+              </div>
+              {filteredSeries.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-12 text-center border border-dashed border-white/[0.06] rounded-xl bg-[#0a0a0f]/30">
+                  <Tv className="w-8 h-8 text-white/15 mb-2" />
+                  <p className="text-white/40 text-sm font-medium">Nenhuma série encontrada</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {filteredSeries.slice(0, visibleLimit).map((item) => (
+                    <div key={`split-s-${item.serieId}`} className="flex flex-col gap-2">
+                      <MediaCard
+                        id={item.serieId}
+                        title={item.details?.name || `Série #${item.serieId}`}
+                        posterPath={item.details?.poster_path || null}
+                        voteAverage={item.details?.vote_average || 0}
+                        releaseDate={item.details?.first_air_date}
+                        type="serie"
+                        watchlistStatusInitial={item.status}
+                        onWatchlistChange={(_, status) => {
+                          if (!status) handleRemoveSerie(item.serieId);
+                        }}
+                      />
+                      <select
+                        value={item.status}
+                        onChange={(e) => handleStatusChangeSerie(item.serieId, e.target.value)}
+                        className="w-full bg-[#14141c] border border-white/[0.08] text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-medium"
+                      >
+                        <option value="PLANNING">Planejo</option>
+                        <option value="WATCHING">Assistindo</option>
+                        <option value="COMPLETED">Concluído</option>
+                        <option value="DROPPED">Abandonado</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
+          /* MODO UNIFICADO */
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
               {visibleItems.map((entry) => {
@@ -269,7 +413,7 @@ export const WatchlistPage: React.FC = () => {
                       <select
                         value={item.status}
                         onChange={(e) => handleStatusChangeMovie(item.movieId, e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500 font-medium"
+                        className="w-full bg-[#14141c] border border-white/[0.08] text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-medium"
                       >
                         <option value="PLANNING">Planejo</option>
                         <option value="WATCHING">Assistindo</option>
@@ -297,7 +441,7 @@ export const WatchlistPage: React.FC = () => {
                       <select
                         value={item.status}
                         onChange={(e) => handleStatusChangeSerie(item.serieId, e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500 font-medium"
+                        className="w-full bg-[#14141c] border border-white/[0.08] text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-medium"
                       >
                         <option value="PLANNING">Planejo</option>
                         <option value="WATCHING">Assistindo</option>
@@ -310,12 +454,12 @@ export const WatchlistPage: React.FC = () => {
               })}
             </div>
 
-            {/* Botão para Continuar Buscando / Carregar Mais */}
+            {/* Botão Carregar Mais */}
             {visibleLimit < totalCount && (
               <div className="flex justify-center mt-12">
                 <button
                   onClick={() => setVisibleLimit((prev) => prev + 24)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-amber-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#14141c] border border-white/[0.08] hover:border-emerald-400 text-emerald-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm"
                 >
                   <ChevronDown className="w-4 h-4" />
                   Carregar mais títulos ({totalCount - visibleLimit} restantes)

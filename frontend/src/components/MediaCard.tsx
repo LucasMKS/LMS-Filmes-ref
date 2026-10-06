@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Heart, Bookmark, Check, Plus } from 'lucide-react';
+import { Star, Heart, Bookmark, Eye, Film, Tv, Users } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { favoriteApi, watchlistApi } from '../services/api';
 import { toast } from 'sonner';
@@ -14,8 +14,14 @@ interface MediaCardProps {
   type: 'movie' | 'serie';
   isFavoriteInitial?: boolean;
   watchlistStatusInitial?: string | null;
+  userRating?: {
+    rating: string | number;
+    comment?: string;
+    rewatchCount?: number;
+  } | null;
   onFavoriteChange?: (id: number, isFav: boolean) => void;
   onWatchlistChange?: (id: number, status: string | null) => void;
+  onQuickView?: () => void;
 }
 
 export const MediaCard: React.FC<MediaCardProps> = ({
@@ -27,8 +33,10 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   type,
   isFavoriteInitial = false,
   watchlistStatusInitial = null,
+  userRating = null,
   onFavoriteChange,
   onWatchlistChange,
+  onQuickView,
 }) => {
   const { isAuthenticated } = useAuthStore();
   const [isFavorite, setIsFavorite] = useState(isFavoriteInitial);
@@ -36,12 +44,21 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   const [loadingFav, setLoadingFav] = useState(false);
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
 
+  useEffect(() => {
+    setIsFavorite(isFavoriteInitial);
+  }, [isFavoriteInitial]);
+
+  useEffect(() => {
+    setWatchlistStatus(watchlistStatusInitial);
+  }, [watchlistStatusInitial]);
+
   const imageUrl = posterPath
     ? `https://image.tmdb.org/t/p/w500${posterPath}`
     : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
 
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
   const detailUrl = type === 'movie' ? `/filmes/${id}` : `/series/${id}`;
+  const hasUserRating = userRating && userRating.rating && Number(userRating.rating) > 0;
 
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,7 +89,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         onFavoriteChange?.(id, true);
         toast.success('Adicionado aos favoritos!');
       }
-    } catch (err) {
+    } catch {
       toast.error('Erro ao atualizar favorito');
     } finally {
       setLoadingFav(false);
@@ -109,7 +126,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         onWatchlistChange?.(id, defaultStatus);
         toast.success('Adicionado à watchlist (Planejo Assistir)!');
       }
-    } catch (err) {
+    } catch {
       toast.error('Erro ao atualizar watchlist');
     } finally {
       setLoadingWatchlist(false);
@@ -117,77 +134,108 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   };
 
   return (
-    <div className="group relative flex flex-col rounded-xl overflow-hidden bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#14141c] transition-all duration-300 hover:-translate-y-1.5 hover:border-purple-500/20 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+      {/* Top subtle glow on hover */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-30" />
+
       {/* Poster Container */}
-      <Link to={detailUrl} className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-950">
-        <img
-          src={imageUrl}
-          alt={title}
-          loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+      <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5">
+        <Link to={detailUrl} className="block w-full h-full">
+          <img
+            src={imageUrl}
+            alt={title}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        </Link>
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3" />
+        {/* Gradient dark overlay */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent opacity-60" />
 
-        {/* TMDB Score Badge */}
-        <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-950/80 backdrop-blur-md border border-zinc-800 text-amber-400 text-xs font-bold shadow-md">
-          <Star className="w-3 h-3 fill-amber-400" />
-          <span>{voteAverage ? voteAverage.toFixed(1) : 'N/A'}</span>
+        {/* Category Badge (Top Left) */}
+        <div
+          className={`pointer-events-none absolute left-3 top-3 z-20 flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg backdrop-blur-md rounded-xl ${
+            type === 'movie' ? 'bg-purple-600/90' : 'bg-violet-600/90'
+          }`}
+        >
+          {type === 'movie' ? <Film className="w-3 h-3" /> : <Tv className="w-3 h-3" />}
+          <span>{type === 'movie' ? 'Filme' : 'Série'}</span>
         </div>
 
-        {/* Quick Action Buttons on Poster */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+        {/* Action Buttons (Top Right - Favorite & Watchlist circular buttons) */}
+        <div className="absolute right-3 top-3 z-30 flex items-center gap-1.5">
+          {/* Favorite button */}
           <button
+            type="button"
             onClick={handleToggleFavorite}
             disabled={loadingFav}
-            className={`p-2 rounded-full backdrop-blur-md border transition-all ${
+            aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+            className={`h-8 w-8 rounded-full border transition-all duration-300 hover:scale-110 flex items-center justify-center ${
               isFavorite
-                ? 'bg-red-500/20 border-red-500/50 text-red-500'
-                : 'bg-zinc-950/70 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900'
+                ? 'border-pink-500/50 bg-pink-600/90 text-white shadow-[0_4px_12px_rgba(219,39,119,0.35)] backdrop-blur-sm hover:bg-pink-500'
+                : 'border-white/10 bg-[#0a0a0f]/60 text-white/60 backdrop-blur-sm hover:bg-[#0a0a0f]/90 hover:text-white hover:border-white/20'
             }`}
-            title={isFavorite ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}
+            title={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
           >
-            <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-red-500' : ''}`} />
+            <Heart className={`h-3.5 w-3.5 ${isFavorite ? 'fill-current' : ''}`} />
           </button>
 
+          {/* Watchlist button */}
           <button
+            type="button"
             onClick={handleToggleWatchlist}
             disabled={loadingWatchlist}
-            className={`p-2 rounded-full backdrop-blur-md border transition-all ${
+            aria-label={watchlistStatus ? 'Remover da Watchlist' : 'Adicionar à Watchlist'}
+            className={`h-8 w-8 rounded-full border transition-all duration-300 hover:scale-110 flex items-center justify-center ${
               watchlistStatus
-                ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                : 'bg-zinc-950/70 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900'
+                ? 'border-emerald-500/50 bg-emerald-600/90 text-white shadow-[0_4px_12px_rgba(16,185,129,0.35)] backdrop-blur-sm hover:bg-emerald-500'
+                : 'border-white/10 bg-[#0a0a0f]/60 text-white/60 backdrop-blur-sm hover:bg-[#0a0a0f]/90 hover:text-white hover:border-white/20'
             }`}
             title={watchlistStatus ? 'Na Watchlist' : 'Adicionar à Watchlist'}
           >
-            <Bookmark className={`w-3.5 h-3.5 ${watchlistStatus ? 'fill-amber-400' : ''}`} />
+            <Bookmark className={`h-3.5 w-3.5 ${watchlistStatus ? 'fill-current' : ''}`} />
           </button>
         </div>
-      </Link>
 
-      {/* Info */}
-      <div className="p-3 flex flex-col flex-1 justify-between gap-1">
-        <div>
-          <Link
-            to={detailUrl}
-            className="font-semibold text-sm text-zinc-100 hover:text-amber-400 transition-colors line-clamp-1"
-            title={title}
-          >
-            {title}
-          </Link>
-          <div className="flex items-center gap-2 text-xs text-zinc-400 mt-0.5">
-            {year && <span>{year}</span>}
-            <span className="w-1 h-1 rounded-full bg-zinc-600" />
-            <span className="uppercase text-[10px] tracking-wider font-semibold text-zinc-400">
-              {type === 'movie' ? 'Filme' : 'Série'}
-            </span>
+        {/* Quick View Button (Desktop Center Hover) */}
+        {onQuickView && (
+          <div className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-all duration-300 hidden sm:flex group-hover:opacity-100 group-hover:scale-100 scale-90">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickView();
+              }}
+              className="h-12 w-12 rounded-full border border-white/10 bg-[#0a0a0f]/80 text-white shadow-2xl backdrop-blur-xl transition-all duration-200 hover:scale-110 hover:bg-purple-600 hover:border-purple-500/40 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center justify-center"
+              aria-label="Visualização rápida"
+              title="Visualização rápida"
+            >
+              <Eye className="h-5 w-5" />
+            </button>
           </div>
+        )}
+
+        {/* Rating Badge (Bottom Right) */}
+        <div className="pointer-events-none absolute right-3 bottom-3 z-20">
+          {hasUserRating ? (
+            <div className="flex items-center gap-1.5 rounded-xl border border-yellow-500/40 bg-yellow-500/20 px-2.5 py-1 text-xs font-extrabold text-yellow-300 shadow-[0_0_12px_rgba(234,179,8,0.25)] backdrop-blur-md">
+              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+              <span>{Number(userRating!.rating).toFixed(1)}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#0a0a0f]/75 px-2.5 py-1 text-white/90 backdrop-blur-md">
+              <Users className="h-3.5 w-3.5 text-white/60" />
+              <span className="text-xs font-bold">
+                {typeof voteAverage === 'number' && voteAverage > 0 ? voteAverage.toFixed(1) : 'N/A'}
+              </span>
+            </div>
+          )}
         </div>
 
+        {/* Watchlist status badge in bottom left (if set) */}
         {watchlistStatus && (
-          <div className="mt-1">
-            <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded bg-zinc-800 text-amber-400 border border-zinc-700/60">
+          <div className="pointer-events-none absolute left-3 bottom-3 z-20">
+            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
               {watchlistStatus === 'PLANNING' && 'Planejo'}
               {watchlistStatus === 'WATCHING' && 'Assistindo'}
               {watchlistStatus === 'COMPLETED' && 'Concluído'}
@@ -195,6 +243,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             </span>
           </div>
         )}
+      </div>
+
+      {/* Footer Info */}
+      <div className="border-t border-white/[0.05] bg-[#14141c] px-4 py-3.5 flex flex-col justify-between flex-1">
+        <div>
+          <Link
+            to={detailUrl}
+            className="mb-0.5 line-clamp-1 text-sm font-bold text-white/90 transition-colors duration-200 group-hover:text-purple-300"
+            title={title}
+          >
+            {title}
+          </Link>
+          <p className="text-xs font-medium text-white/35">
+            {year ? year : 'Ano não disponível'}
+          </p>
+        </div>
       </div>
     </div>
   );
