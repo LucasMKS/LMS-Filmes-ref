@@ -51,7 +51,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/actuator/**",
                                 "/notifications/stream",
-                                "/**/notifications/stream"
+                                "/lms-favorite/notifications/stream",
+                                "/lmsfavorite/notifications/stream",
+                                "/lms-filmes/notifications/stream",
+                                "/lmsfilmes/notifications/stream"
                         ).permitAll()
 
                         // Todas as rotas protegidas
