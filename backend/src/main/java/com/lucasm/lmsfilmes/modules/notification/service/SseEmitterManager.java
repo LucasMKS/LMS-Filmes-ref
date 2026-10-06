@@ -36,7 +36,8 @@ public class SseEmitterManager {
             emitter.send(SseEmitter.event()
                     .name("CONNECTED")
                     .data(Map.of("message", "Conexão SSE estabelecida com sucesso")));
-        } catch (IOException e) {
+        } catch (Exception e) {
+            log.warn("Erro ao enviar evento de conexão SSE: {}", e.getMessage());
             removeEmitter(userKey, emitter);
         }
 
