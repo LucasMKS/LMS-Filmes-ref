@@ -150,7 +150,7 @@ export const RatingsPage: React.FC = () => {
           <div className="flex items-center gap-2 mt-1">
             <div className="flex items-center gap-1 text-yellow-300 font-extrabold text-sm bg-yellow-500/15 border border-yellow-500/30 px-2 py-0.5 rounded-lg shadow-sm">
               <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-              <span>{item.rating.toFixed(1)}</span>
+              <span>{item.rating != null ? Number(item.rating).toFixed(1) : '0.0'}</span>
             </div>
             {item.rewatchCount && item.rewatchCount > 0 ? (
               <span className="text-[11px] text-purple-300 bg-purple-500/15 border border-purple-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1 font-semibold">
@@ -222,7 +222,7 @@ export const RatingsPage: React.FC = () => {
           <div className="flex items-center gap-2 mt-1">
             <div className="flex items-center gap-1 text-yellow-300 font-extrabold text-sm bg-yellow-500/15 border border-yellow-500/30 px-2 py-0.5 rounded-lg shadow-sm">
               <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-              <span>{item.rating.toFixed(1)}</span>
+              <span>{item.rating != null ? Number(item.rating).toFixed(1) : '0.0'}</span>
             </div>
             {item.rewatchCount && item.rewatchCount > 0 ? (
               <span className="text-[11px] text-violet-300 bg-violet-500/15 border border-violet-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1 font-semibold">

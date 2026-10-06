@@ -109,7 +109,14 @@ public class RedisConfig implements CachingConfigurer {
         return new CacheErrorHandler() {
             @Override
             public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
-                log.warn("Cache GET falhou para chave '{}' no cache '{}': {}", key, cache != null ? cache.getName() : "desconhecido", exception.getMessage());
+                log.warn("Cache GET falhou para chave '{}' no cache '{}': {}. Limpando chave inválida...", key, cache != null ? cache.getName() : "desconhecido", exception.getMessage());
+                if (cache != null && key != null) {
+                    try {
+                        cache.evict(key);
+                    } catch (Exception e) {
+                        log.debug("Erro ao limpar chave inválida '{}' do cache: {}", key, e.getMessage());
+                    }
+                }
             }
 
             @Override

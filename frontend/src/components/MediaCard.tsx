@@ -220,13 +220,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           {hasUserRating ? (
             <div className="flex items-center gap-1.5 rounded-xl border border-yellow-500/40 bg-yellow-500/20 px-2.5 py-1 text-xs font-extrabold text-yellow-300 shadow-[0_0_12px_rgba(234,179,8,0.25)] backdrop-blur-md">
               <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-              <span>{Number(userRating!.rating).toFixed(1)}</span>
+              <span>{userRating?.rating != null ? Number(userRating.rating).toFixed(1) : '0.0'}</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#0a0a0f]/75 px-2.5 py-1 text-white/90 backdrop-blur-md">
               <Users className="h-3.5 w-3.5 text-white/60" />
               <span className="text-xs font-bold">
-                {typeof voteAverage === 'number' && voteAverage > 0 ? voteAverage.toFixed(1) : 'N/A'}
+                {voteAverage != null && !isNaN(Number(voteAverage)) && Number(voteAverage) > 0
+                  ? Number(voteAverage).toFixed(1)
+                  : 'N/A'}
               </span>
             </div>
           )}
