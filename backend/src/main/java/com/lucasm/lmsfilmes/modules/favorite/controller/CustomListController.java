@@ -11,7 +11,10 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping({"/custom-lists", "/lms-favorite/custom-lists", "/lmsfavorite/custom-lists"})
+@RequestMapping({
+        "/custom-lists", "/lms-favorite/custom-lists", "/lmsfavorite/custom-lists",
+        "/favorite/custom-lists", "/lms-favorite/favorite/custom-lists", "/lmsfavorite/favorite/custom-lists"
+})
 @RequiredArgsConstructor
 public class CustomListController {
 

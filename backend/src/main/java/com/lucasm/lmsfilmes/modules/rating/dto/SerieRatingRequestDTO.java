@@ -17,10 +17,11 @@ public class SerieRatingRequestDTO {
     @DecimalMax(value = "10.0", message = "A nota deve ser no máximo 10.0")
     private Double rating;
 
-    @NotBlank(message = "O título é obrigatório")
     private String title;
 
     private String poster_path;
 
     private String comment;
+
+    private Integer rewatchCount;
 }

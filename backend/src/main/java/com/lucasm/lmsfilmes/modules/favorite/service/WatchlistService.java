@@ -176,4 +176,34 @@ public class WatchlistService {
         if (userId == null) return List.of();
         return watchlistSerieRepository.findByUserIdOrderByAddedAtDesc(userId);
     }
+
+    @Transactional
+    public void removeMovieFromWatchlist(String movieId, String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        if (userId != null) {
+            watchlistMovieRepository.findByUserIdAndMovieId(userId, movieId)
+                    .ifPresent(watchlistMovieRepository::delete);
+        }
+    }
+
+    @Transactional
+    public void removeSerieFromWatchlist(String serieId, String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        if (userId != null) {
+            watchlistSerieRepository.findByUserIdAndSerieId(userId, serieId)
+                    .ifPresent(watchlistSerieRepository::delete);
+        }
+    }
+
+    public static WatchlistStatus parseStatus(Object status) {
+        if (status == null) return WatchlistStatus.PLAN_TO_WATCH;
+        if (status instanceof WatchlistStatus ws) return ws;
+        String s = status.toString().trim().toUpperCase();
+        if ("PLANNING".equals(s)) return WatchlistStatus.PLAN_TO_WATCH;
+        try {
+            return WatchlistStatus.valueOf(s);
+        } catch (Exception e) {
+            return WatchlistStatus.PLAN_TO_WATCH;
+        }
+    }
 }

@@ -44,6 +44,12 @@ public class FavoriteActorService {
         favoriteActorRepository.deleteByUserIdAndActorId(userId, actorId);
     }
 
+    public boolean isFavoriteActor(String actorId, String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        if (userId == null) return false;
+        return favoriteActorRepository.findByUserIdAndActorId(userId, actorId).isPresent();
+    }
+
     @Transactional
     public void clearActors(String email) {
         Long userId = authService.getUserIdByIdentifier(email);

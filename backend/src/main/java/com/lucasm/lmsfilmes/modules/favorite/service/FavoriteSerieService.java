@@ -57,6 +57,19 @@ public class FavoriteSerieService {
         return favoriteSerieRepository.existsByUserIdAndSerieIdAndFavoriteTrue(userId, serieId);
     }
 
+    @Transactional
+    public boolean removeFavorite(String serieId, String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        if (userId == null) return false;
+
+        Optional<FavoriteSerie> opt = favoriteSerieRepository.findByUserIdAndSerieId(userId, serieId);
+        if (opt.isPresent()) {
+            favoriteSerieRepository.delete(opt.get());
+            return true;
+        }
+        return false;
+    }
+
     public Map<String, Boolean> getFavoriteStatuses(List<String> serieIds, String email) {
         if (serieIds == null || serieIds.isEmpty()) return Map.of();
         Long userId = authService.getUserIdByIdentifier(email);

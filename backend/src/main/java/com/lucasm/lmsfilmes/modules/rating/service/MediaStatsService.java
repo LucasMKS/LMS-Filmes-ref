@@ -36,4 +36,25 @@ public class MediaStatsService {
                 new MediaBalanceDTO("Séries", (int) totalSeries, "#a855f7")
         );
     }
+
+    @Cacheable(value = "mediaBalanceSummary", key = "#email")
+    public java.util.Map<String, Object> getMediaBalanceSummary(String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        long totalMovies = 0;
+        long totalSeries = 0;
+        if (userId != null) {
+            totalMovies = movieRatingRepository.countByUserId(userId);
+            totalSeries = serieRatingRepository.countByUserId(userId);
+        }
+        long total = totalMovies + totalSeries;
+        double moviePercentage = total > 0 ? (totalMovies * 100.0 / total) : 50.0;
+        double seriePercentage = total > 0 ? (totalSeries * 100.0 / total) : 50.0;
+
+        return java.util.Map.of(
+                "totalMovies", totalMovies,
+                "totalSeries", totalSeries,
+                "moviePercentage", Math.round(moviePercentage),
+                "seriePercentage", Math.round(seriePercentage)
+        );
+    }
 }

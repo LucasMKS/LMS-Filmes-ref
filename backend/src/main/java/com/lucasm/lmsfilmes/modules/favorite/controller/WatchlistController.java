@@ -22,27 +22,62 @@ public class WatchlistController {
 
     // --- FILMES ---
 
-    @PostMapping("/movies")
-    public ResponseEntity<WatchlistStatusResponse> toggleMovieWatchlist(
-            @RequestParam String movieId,
-            @RequestParam(required = false) WatchlistStatus status,
+    @PostMapping({"/movies", "/movie"})
+    public ResponseEntity<WatchlistStatusResponse> toggleOrSetMovieWatchlist(
+            @RequestParam(required = false) String movieId,
+            @RequestParam(required = false) Object status,
+            @RequestBody(required = false) Map<String, Object> body,
             Authentication authentication) {
-        return ResponseEntity.ok(watchlistService.toggleMovieWatchlist(movieId, status, authentication.getName()));
+        String id = movieId;
+        Object st = status;
+        if (id == null && body != null && body.get("movieId") != null) {
+            id = String.valueOf(body.get("movieId"));
+        }
+        if (st == null && body != null && body.get("status") != null) {
+            st = body.get("status");
+        }
+        WatchlistStatus parsed = WatchlistService.parseStatus(st);
+        return ResponseEntity.ok(watchlistService.toggleMovieWatchlist(id, parsed, authentication.getName()));
     }
 
-    @PatchMapping("/movies/status")
+    @PatchMapping({"/movies/status", "/movie/status"})
     public ResponseEntity<WatchlistStatusResponse> updateMovieStatus(
-            @RequestParam String movieId,
-            @RequestParam WatchlistStatus status,
+            @RequestParam(required = false) String movieId,
+            @RequestParam(required = false) Object status,
+            @RequestBody(required = false) Map<String, Object> body,
             Authentication authentication) {
-        return ResponseEntity.ok(watchlistService.updateMovieStatus(movieId, status, authentication.getName()));
+        String id = movieId;
+        Object st = status;
+        if (id == null && body != null && body.get("movieId") != null) {
+            id = String.valueOf(body.get("movieId"));
+        }
+        if (st == null && body != null && body.get("status") != null) {
+            st = body.get("status");
+        }
+        WatchlistStatus parsed = WatchlistService.parseStatus(st);
+        return ResponseEntity.ok(watchlistService.updateMovieStatus(id, parsed, authentication.getName()));
     }
 
-    @GetMapping("/movies/status")
-    public ResponseEntity<WatchlistStatusResponse> getMovieWatchlistStatus(
+    @GetMapping({"/movies/status", "/movie/status"})
+    public ResponseEntity<WatchlistStatusResponse> getMovieWatchlistStatusParam(
             @RequestParam String movieId,
             Authentication authentication) {
         return ResponseEntity.ok(watchlistService.getMovieWatchlistStatus(movieId, authentication.getName()));
+    }
+
+    @GetMapping({"/movies/status/{movieId}", "/movie/status/{movieId}"})
+    public ResponseEntity<WatchlistStatusResponse> getMovieWatchlistStatus(
+            @PathVariable String movieId,
+            Authentication authentication) {
+        return ResponseEntity.ok(watchlistService.getMovieWatchlistStatus(movieId, authentication.getName()));
+    }
+
+    @DeleteMapping({"/movies/{movieId}", "/movie/{movieId}"})
+    public ResponseEntity<Map<String, Boolean>> removeMovieWatchlist(
+            @PathVariable String movieId,
+            Authentication authentication) {
+        watchlistService.removeMovieFromWatchlist(movieId, authentication.getName());
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/movies/status/batch")
@@ -52,34 +87,69 @@ public class WatchlistController {
         return ResponseEntity.ok(watchlistService.getMovieWatchlistStatuses(movieIds, authentication.getName()));
     }
 
-    @GetMapping("/movies")
+    @GetMapping({"/movies", "/movie"})
     public ResponseEntity<List<WatchlistMovie>> getUserWatchlistMovies(Authentication authentication) {
         return ResponseEntity.ok(watchlistService.getUserWatchlistMovies(authentication.getName()));
     }
 
     // --- SÉRIES ---
 
-    @PostMapping("/series")
-    public ResponseEntity<WatchlistStatusResponse> toggleSerieWatchlist(
-            @RequestParam String serieId,
-            @RequestParam(required = false) WatchlistStatus status,
+    @PostMapping({"/series", "/serie"})
+    public ResponseEntity<WatchlistStatusResponse> toggleOrSetSerieWatchlist(
+            @RequestParam(required = false) String serieId,
+            @RequestParam(required = false) Object status,
+            @RequestBody(required = false) Map<String, Object> body,
             Authentication authentication) {
-        return ResponseEntity.ok(watchlistService.toggleSerieWatchlist(serieId, status, authentication.getName()));
+        String id = serieId;
+        Object st = status;
+        if (id == null && body != null && body.get("serieId") != null) {
+            id = String.valueOf(body.get("serieId"));
+        }
+        if (st == null && body != null && body.get("status") != null) {
+            st = body.get("status");
+        }
+        WatchlistStatus parsed = WatchlistService.parseStatus(st);
+        return ResponseEntity.ok(watchlistService.toggleSerieWatchlist(id, parsed, authentication.getName()));
     }
 
-    @PatchMapping("/series/status")
+    @PatchMapping({"/series/status", "/serie/status"})
     public ResponseEntity<WatchlistStatusResponse> updateSerieStatus(
-            @RequestParam String serieId,
-            @RequestParam WatchlistStatus status,
+            @RequestParam(required = false) String serieId,
+            @RequestParam(required = false) Object status,
+            @RequestBody(required = false) Map<String, Object> body,
             Authentication authentication) {
-        return ResponseEntity.ok(watchlistService.updateSerieStatus(serieId, status, authentication.getName()));
+        String id = serieId;
+        Object st = status;
+        if (id == null && body != null && body.get("serieId") != null) {
+            id = String.valueOf(body.get("serieId"));
+        }
+        if (st == null && body != null && body.get("status") != null) {
+            st = body.get("status");
+        }
+        WatchlistStatus parsed = WatchlistService.parseStatus(st);
+        return ResponseEntity.ok(watchlistService.updateSerieStatus(id, parsed, authentication.getName()));
     }
 
-    @GetMapping("/series/status")
-    public ResponseEntity<WatchlistStatusResponse> getSerieWatchlistStatus(
+    @GetMapping({"/series/status", "/serie/status"})
+    public ResponseEntity<WatchlistStatusResponse> getSerieWatchlistStatusParam(
             @RequestParam String serieId,
             Authentication authentication) {
         return ResponseEntity.ok(watchlistService.getSerieWatchlistStatus(serieId, authentication.getName()));
+    }
+
+    @GetMapping({"/series/status/{serieId}", "/serie/status/{serieId}"})
+    public ResponseEntity<WatchlistStatusResponse> getSerieWatchlistStatus(
+            @PathVariable String serieId,
+            Authentication authentication) {
+        return ResponseEntity.ok(watchlistService.getSerieWatchlistStatus(serieId, authentication.getName()));
+    }
+
+    @DeleteMapping({"/series/{serieId}", "/serie/{serieId}"})
+    public ResponseEntity<Map<String, Boolean>> removeSerieWatchlist(
+            @PathVariable String serieId,
+            Authentication authentication) {
+        watchlistService.removeSerieFromWatchlist(serieId, authentication.getName());
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/series/status/batch")
@@ -89,7 +159,7 @@ public class WatchlistController {
         return ResponseEntity.ok(watchlistService.getSerieWatchlistStatuses(serieIds, authentication.getName()));
     }
 
-    @GetMapping("/series")
+    @GetMapping({"/series", "/serie"})
     public ResponseEntity<List<WatchlistSerie>> getUserWatchlistSeries(Authentication authentication) {
         return ResponseEntity.ok(watchlistService.getUserWatchlistSeries(authentication.getName()));
     }

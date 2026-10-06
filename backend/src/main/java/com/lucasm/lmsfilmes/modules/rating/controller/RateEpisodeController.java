@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping({"/rate/episodes", "/lms-rating/rate/episodes", "/lmsrating/rate/episodes"})
+@RequestMapping({
+        "/rate/episodes", "/lms-rating/rate/episodes", "/lmsrating/rate/episodes",
+        "/rate/episode", "/lms-rating/rate/episode", "/lmsrating/rate/episode"
+})
 @RequiredArgsConstructor
 public class RateEpisodeController {
 
@@ -30,6 +33,14 @@ public class RateEpisodeController {
             @PathVariable String serieId,
             Authentication authentication) {
         return ResponseEntity.ok(rateEpisodeService.getRatedEpisodes(serieId, authentication.getName()));
+    }
+
+    @GetMapping("/serie/{serieId}/season/{seasonNumber}")
+    public ResponseEntity<List<RatingEpisode>> getSeasonEpisodeRatings(
+            @PathVariable String serieId,
+            @PathVariable int seasonNumber,
+            Authentication authentication) {
+        return ResponseEntity.ok(rateEpisodeService.getSeasonEpisodeRatings(serieId, seasonNumber, authentication.getName()));
     }
 
     @GetMapping("/serie/{serieId}/season/{seasonNumber}/episode/{episodeNumber}")

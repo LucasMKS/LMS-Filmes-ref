@@ -57,6 +57,19 @@ public class FavoriteMovieService {
         return favoriteMovieRepository.existsByUserIdAndMovieIdAndFavoriteTrue(userId, movieId);
     }
 
+    @Transactional
+    public boolean removeFavorite(String movieId, String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        if (userId == null) return false;
+
+        Optional<FavoriteMovie> opt = favoriteMovieRepository.findByUserIdAndMovieId(userId, movieId);
+        if (opt.isPresent()) {
+            favoriteMovieRepository.delete(opt.get());
+            return true;
+        }
+        return false;
+    }
+
     public Map<String, Boolean> getFavoriteStatuses(List<String> movieIds, String email) {
         if (movieIds == null || movieIds.isEmpty()) return Map.of();
         Long userId = authService.getUserIdByIdentifier(email);

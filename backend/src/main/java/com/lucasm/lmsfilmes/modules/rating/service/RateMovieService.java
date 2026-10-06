@@ -58,6 +58,9 @@ public class RateMovieService {
         movie.setUserId(userId);
         movie.setRating(request.getRating());
         movie.setComment(request.getComment());
+        if (request.getRewatchCount() != null) {
+            movie.setRewatchCount(request.getRewatchCount());
+        }
 
         RatingMovie saved = movieRatingRepository.save(movie);
 
@@ -99,13 +102,24 @@ public class RateMovieService {
 
     public RatingMovieResponseDTO getMovieRating(String movieId, String email) {
         Long userId = authService.getUserIdByIdentifier(email);
-        if (userId == null) throw new ResourceNotFoundException("Usuário não encontrado");
+        if (userId == null) return null;
 
-        RatingMovie rating = movieRatingRepository.findByMovieIdAndUserId(movieId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Avaliação não encontrada para o filme: " + movieId));
+        Optional<RatingMovie> opt = movieRatingRepository.findByMovieIdAndUserId(movieId, userId);
+        if (opt.isEmpty()) return null;
 
+        RatingMovie rating = opt.get();
         Movie cat = catalogMovieRepository.findById(movieId).orElse(null);
         return toDto(rating, cat != null ? cat.getTitle() : null, cat != null ? cat.getPosterPath() : null);
+    }
+
+    @Transactional
+    @CacheEvict(value = {"userRatedMovies", "dashboardStats", "mediaBalance"}, allEntries = true)
+    public void deleteMovieRating(String movieId, String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        if (userId != null) {
+            movieRatingRepository.findByMovieIdAndUserId(movieId, userId)
+                    .ifPresent(movieRatingRepository::delete);
+        }
     }
 
     public Map<String, RatingStatusDTO> getRatingStatuses(String email, List<String> movieIds) {

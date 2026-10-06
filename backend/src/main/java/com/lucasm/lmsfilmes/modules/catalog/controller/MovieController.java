@@ -53,30 +53,35 @@ public class MovieController {
         return ResponseEntity.ok(movieService.getMovieDetails(movieId, includeRecommendations));
     }
 
+    @GetMapping("/{movieId}/recommendations")
+    public ResponseEntity<TmdbPageDTO<TmdbDTO>> getRecommendations(@PathVariable String movieId) {
+        return ResponseEntity.ok(movieService.getMovieRecommendations(movieId));
+    }
+
     @GetMapping("/batch")
     public ResponseEntity<Map<String, TmdbDTO>> getBatch(@RequestParam List<String> ids) {
         return ResponseEntity.ok(movieService.getMoviesBatch(ids));
     }
 
     // Rotas de Pessoas / Atores (TMDB)
-    @GetMapping("/actors/popular")
+    @GetMapping({"/actors/popular", "/person/popular"})
     public ResponseEntity<TmdbPageDTO<TmdbPersonDTO>> getPopularActors(@RequestParam(defaultValue = "1") int page) {
         return ResponseEntity.ok(movieService.getPopularPeople(page));
     }
 
-    @GetMapping("/actors/search")
+    @GetMapping({"/actors/search", "/person/search"})
     public ResponseEntity<TmdbPageDTO<TmdbPersonDTO>> searchActors(
             @RequestParam String query,
             @RequestParam(defaultValue = "1") int page) {
         return ResponseEntity.ok(movieService.searchPeople(query, page));
     }
 
-    @GetMapping("/actors/{personId}")
+    @GetMapping({"/actors/{personId}", "/person/{personId}"})
     public ResponseEntity<TmdbPersonDTO> getActorDetails(@PathVariable String personId) {
         return ResponseEntity.ok(movieService.getPersonDetails(personId));
     }
 
-    @GetMapping("/actors/{personId}/credits")
+    @GetMapping({"/actors/{personId}/credits", "/person/{personId}/credits"})
     public ResponseEntity<TmdbPersonCreditsDTO> getActorCredits(@PathVariable String personId) {
         return ResponseEntity.ok(movieService.getPersonCredits(personId));
     }

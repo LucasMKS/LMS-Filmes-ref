@@ -53,6 +53,11 @@ public class SerieController {
         return ResponseEntity.ok(serieService.getSeriesDetails(serieId, includeRecommendations));
     }
 
+    @GetMapping("/{serieId}/recommendations")
+    public ResponseEntity<TmdbPageDTO<SeriesDTO>> getRecommendations(@PathVariable String serieId) {
+        return ResponseEntity.ok(serieService.getSeriesRecommendations(serieId));
+    }
+
     @GetMapping("/batch")
     public ResponseEntity<Map<String, SeriesDTO>> getBatch(@RequestParam List<String> ids) {
         return ResponseEntity.ok(serieService.getSeriesBatch(ids));

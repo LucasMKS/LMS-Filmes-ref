@@ -12,7 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping({"/favorite/movies", "/lms-favorite/favorite/movies", "/lmsfavorite/favorite/movies"})
+@RequestMapping({
+        "/favorite/movies", "/lms-favorite/favorite/movies", "/lmsfavorite/favorite/movies",
+        "/favorite/movie", "/lms-favorite/favorite/movie", "/lmsfavorite/favorite/movie"
+})
 @RequiredArgsConstructor
 public class FavoriteMovieController {
 
@@ -20,10 +23,31 @@ public class FavoriteMovieController {
 
     @PostMapping
     public ResponseEntity<FavoriteStatusResponse> toggleFavorite(
-            @RequestParam String movieId,
+            @RequestParam(required = false) String movieId,
+            @RequestBody(required = false) Map<String, Object> body,
             Authentication authentication) {
-        boolean isFav = favoriteMovieService.toggleFavorite(movieId, authentication.getName());
+        String id = movieId;
+        if (id == null && body != null && body.get("movieId") != null) {
+            id = String.valueOf(body.get("movieId"));
+        }
+        boolean isFav = favoriteMovieService.toggleFavorite(id, authentication.getName());
         return ResponseEntity.ok(new FavoriteStatusResponse(isFav));
+    }
+
+    @GetMapping({"/check/{movieId}", "/status/{movieId}"})
+    public ResponseEntity<FavoriteStatusResponse> checkFavorite(
+            @PathVariable String movieId,
+            Authentication authentication) {
+        boolean isFav = favoriteMovieService.getFavoriteStatus(movieId, authentication.getName());
+        return ResponseEntity.ok(new FavoriteStatusResponse(isFav));
+    }
+
+    @DeleteMapping("/{movieId}")
+    public ResponseEntity<Map<String, Boolean>> removeFavorite(
+            @PathVariable String movieId,
+            Authentication authentication) {
+        favoriteMovieService.removeFavorite(movieId, authentication.getName());
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/status")
@@ -41,8 +65,8 @@ public class FavoriteMovieController {
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getFavoriteMovies(Authentication authentication) {
+    public ResponseEntity<List<Movie>> getFavoriteMovies(Authentication authentication) {
         List<Movie> list = favoriteMovieService.getFavoriteMovies(authentication.getName());
-        return ResponseEntity.ok(Map.of("data", list));
+        return ResponseEntity.ok(list);
     }
 }

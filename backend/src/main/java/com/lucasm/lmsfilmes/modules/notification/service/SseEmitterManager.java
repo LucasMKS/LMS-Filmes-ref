@@ -84,6 +84,7 @@ public class SseEmitterManager {
             try {
                 emitter.send(ping);
             } catch (Exception e) {
+                try { emitter.complete(); } catch (Exception ignored) {}
                 broadcastEmitters.remove(emitter);
             }
         }
@@ -92,6 +93,7 @@ public class SseEmitterManager {
                 try {
                     emitter.send(ping);
                 } catch (Exception e) {
+                    try { emitter.complete(); } catch (Exception ignored) {}
                     removeEmitter(entry.getKey(), emitter);
                 }
             }

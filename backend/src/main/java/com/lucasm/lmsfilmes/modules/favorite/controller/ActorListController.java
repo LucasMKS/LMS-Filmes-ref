@@ -52,7 +52,7 @@ public class ActorListController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
-    @PostMapping("/{id}/actors")
+    @PostMapping({"/{id}/actors", "/{id}/items"})
     public ResponseEntity<ActorListDTOs.Response> addActorToList(
             @PathVariable Long id,
             @RequestBody ActorListDTOs.AddItem dto,
@@ -60,7 +60,7 @@ public class ActorListController {
         return ResponseEntity.ok(actorListService.addActorToList(id, dto, authentication.getName()));
     }
 
-    @DeleteMapping("/{id}/actors/{actorId}")
+    @DeleteMapping({"/{id}/actors/{actorId}", "/{id}/items/{actorId}"})
     public ResponseEntity<Map<String, Boolean>> removeActorFromList(
             @PathVariable Long id,
             @PathVariable String actorId,

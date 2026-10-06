@@ -132,6 +132,11 @@ public class MovieService {
         }
     }
 
+    @Cacheable(value = "movieRecommendations", key = "#movieId")
+    public TmdbPageDTO<TmdbDTO> getMovieRecommendations(String movieId) {
+        return fetchPaginatedData("/movie/" + movieId + "/recommendations");
+    }
+
     public TmdbPageDTO<TmdbDTO> searchMovies(String query, int page) {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         String path = "/search/movie?query=" + encodedQuery + "&include_adult=false&page=" + page;

@@ -98,6 +98,11 @@ public class SerieService {
         return fetchPaginatedData("/tv/top_rated?page=" + page);
     }
 
+    @Cacheable(value = "seriesRecommendations", key = "#serieId")
+    public TmdbPageDTO<SeriesDTO> getSeriesRecommendations(String serieId) {
+        return fetchPaginatedData("/tv/" + serieId + "/recommendations");
+    }
+
     public TmdbPageDTO<SeriesDTO> searchSeries(String query, int page) {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         String path = "/search/tv?query=" + encodedQuery + "&include_adult=false&page=" + page;

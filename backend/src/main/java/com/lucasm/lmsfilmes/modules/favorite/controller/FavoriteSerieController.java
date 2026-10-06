@@ -12,7 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping({"/favorite/series", "/lms-favorite/favorite/series", "/lmsfavorite/favorite/series"})
+@RequestMapping({
+        "/favorite/series", "/lms-favorite/favorite/series", "/lmsfavorite/favorite/series",
+        "/favorite/serie", "/lms-favorite/favorite/serie", "/lmsfavorite/favorite/serie"
+})
 @RequiredArgsConstructor
 public class FavoriteSerieController {
 
@@ -20,10 +23,31 @@ public class FavoriteSerieController {
 
     @PostMapping
     public ResponseEntity<FavoriteStatusResponse> toggleFavorite(
-            @RequestParam String serieId,
+            @RequestParam(required = false) String serieId,
+            @RequestBody(required = false) Map<String, Object> body,
             Authentication authentication) {
-        boolean isFav = favoriteSerieService.toggleFavorite(serieId, authentication.getName());
+        String id = serieId;
+        if (id == null && body != null && body.get("serieId") != null) {
+            id = String.valueOf(body.get("serieId"));
+        }
+        boolean isFav = favoriteSerieService.toggleFavorite(id, authentication.getName());
         return ResponseEntity.ok(new FavoriteStatusResponse(isFav));
+    }
+
+    @GetMapping({"/check/{serieId}", "/status/{serieId}"})
+    public ResponseEntity<FavoriteStatusResponse> checkFavorite(
+            @PathVariable String serieId,
+            Authentication authentication) {
+        boolean isFav = favoriteSerieService.getFavoriteStatus(serieId, authentication.getName());
+        return ResponseEntity.ok(new FavoriteStatusResponse(isFav));
+    }
+
+    @DeleteMapping("/{serieId}")
+    public ResponseEntity<Map<String, Boolean>> removeFavorite(
+            @PathVariable String serieId,
+            Authentication authentication) {
+        favoriteSerieService.removeFavorite(serieId, authentication.getName());
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/status")
@@ -41,8 +65,8 @@ public class FavoriteSerieController {
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getFavoriteSeries(Authentication authentication) {
+    public ResponseEntity<List<Serie>> getFavoriteSeries(Authentication authentication) {
         List<Serie> list = favoriteSerieService.getFavoriteSeries(authentication.getName());
-        return ResponseEntity.ok(Map.of("data", list));
+        return ResponseEntity.ok(list);
     }
 }

@@ -57,6 +57,9 @@ public class RateSerieService {
         serie.setUserId(userId);
         serie.setRating(request.getRating());
         serie.setComment(request.getComment());
+        if (request.getRewatchCount() != null) {
+            serie.setRewatchCount(request.getRewatchCount());
+        }
 
         RatingSerie saved = serieRatingRepository.save(serie);
 
@@ -98,13 +101,24 @@ public class RateSerieService {
 
     public RatingSerieResponseDTO getSerieRating(String serieId, String email) {
         Long userId = authService.getUserIdByIdentifier(email);
-        if (userId == null) throw new ResourceNotFoundException("Usuário não encontrado");
+        if (userId == null) return null;
 
-        RatingSerie rating = serieRatingRepository.findBySerieIdAndUserId(serieId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Avaliação não encontrada para a série: " + serieId));
+        Optional<RatingSerie> opt = serieRatingRepository.findBySerieIdAndUserId(serieId, userId);
+        if (opt.isEmpty()) return null;
 
+        RatingSerie rating = opt.get();
         Serie cat = catalogSerieRepository.findById(serieId).orElse(null);
         return toDto(rating, cat != null ? cat.getTitle() : null, cat != null ? cat.getPosterPath() : null);
+    }
+
+    @Transactional
+    @CacheEvict(value = {"userRatedSeries", "dashboardStats", "mediaBalance"}, allEntries = true)
+    public void deleteSerieRating(String serieId, String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        if (userId != null) {
+            serieRatingRepository.findBySerieIdAndUserId(serieId, userId)
+                    .ifPresent(serieRatingRepository::delete);
+        }
     }
 
     public Map<String, RatingStatusDTO> getRatingStatuses(String email, List<String> serieIds) {

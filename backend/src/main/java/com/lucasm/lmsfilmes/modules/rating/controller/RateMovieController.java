@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping({"/rate/movies", "/lms-rating/rate/movies", "/lmsrating/rate/movies"})
+@RequestMapping({
+        "/rate/movies", "/lms-rating/rate/movies", "/lmsrating/rate/movies",
+        "/rate/movie", "/lms-rating/rate/movie", "/lmsrating/rate/movie"
+})
 @RequiredArgsConstructor
 public class RateMovieController {
 
@@ -31,7 +34,7 @@ public class RateMovieController {
         return ResponseEntity.ok(rateMovieService.rateMovie(request, authentication.getName()));
     }
 
-    @GetMapping
+    @GetMapping({"", "/user"})
     public ResponseEntity<List<RatingMovieResponseDTO>> getRatedMovies(Authentication authentication) {
         return ResponseEntity.ok(rateMovieService.getRatedMovies(authentication.getName()));
     }
@@ -49,10 +52,22 @@ public class RateMovieController {
     }
 
     @GetMapping("/{movieId}")
-    public ResponseEntity<RatingMovieResponseDTO> getMovieRating(
+    public ResponseEntity<?> getMovieRating(
             @PathVariable String movieId,
             Authentication authentication) {
-        return ResponseEntity.ok(rateMovieService.getMovieRating(movieId, authentication.getName()));
+        if ("user".equalsIgnoreCase(movieId)) {
+            return ResponseEntity.ok(rateMovieService.getRatedMovies(authentication.getName()));
+        }
+        RatingMovieResponseDTO dto = rateMovieService.getMovieRating(movieId, authentication.getName());
+        return ResponseEntity.ok(dto);
+    }
+
+    @DeleteMapping("/{movieId}")
+    public ResponseEntity<Map<String, Boolean>> deleteMovieRating(
+            @PathVariable String movieId,
+            Authentication authentication) {
+        rateMovieService.deleteMovieRating(movieId, authentication.getName());
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/status/batch")

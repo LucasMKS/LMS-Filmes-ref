@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping({"/rate/series", "/lms-rating/rate/series", "/lmsrating/rate/series"})
+@RequestMapping({
+        "/rate/series", "/lms-rating/rate/series", "/lmsrating/rate/series",
+        "/rate/serie", "/lms-rating/rate/serie", "/lmsrating/rate/serie"
+})
 @RequiredArgsConstructor
 public class RateSerieController {
 
@@ -31,7 +34,7 @@ public class RateSerieController {
         return ResponseEntity.ok(rateSerieService.rateSerie(request, authentication.getName()));
     }
 
-    @GetMapping
+    @GetMapping({"", "/user"})
     public ResponseEntity<List<RatingSerieResponseDTO>> getRatedSeries(Authentication authentication) {
         return ResponseEntity.ok(rateSerieService.getRatedSeries(authentication.getName()));
     }
@@ -49,10 +52,22 @@ public class RateSerieController {
     }
 
     @GetMapping("/{serieId}")
-    public ResponseEntity<RatingSerieResponseDTO> getSerieRating(
+    public ResponseEntity<?> getSerieRating(
             @PathVariable String serieId,
             Authentication authentication) {
-        return ResponseEntity.ok(rateSerieService.getSerieRating(serieId, authentication.getName()));
+        if ("user".equalsIgnoreCase(serieId)) {
+            return ResponseEntity.ok(rateSerieService.getRatedSeries(authentication.getName()));
+        }
+        RatingSerieResponseDTO dto = rateSerieService.getSerieRating(serieId, authentication.getName());
+        return ResponseEntity.ok(dto);
+    }
+
+    @DeleteMapping("/{serieId}")
+    public ResponseEntity<Map<String, Boolean>> deleteSerieRating(
+            @PathVariable String serieId,
+            Authentication authentication) {
+        rateSerieService.deleteSerieRating(serieId, authentication.getName());
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/status/batch")

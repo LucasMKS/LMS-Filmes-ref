@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping({"/watched/episodes", "/lms-favorite/watched/episodes", "/lmsfavorite/watched/episodes"})
+@RequestMapping({
+        "/watched/episodes", "/lms-favorite/watched/episodes", "/lmsfavorite/watched/episodes",
+        "/watchlist/watched-episodes", "/lms-favorite/watchlist/watched-episodes", "/lmsfavorite/watchlist/watched-episodes"
+})
 @RequiredArgsConstructor
 public class WatchedEpisodeController {
 
