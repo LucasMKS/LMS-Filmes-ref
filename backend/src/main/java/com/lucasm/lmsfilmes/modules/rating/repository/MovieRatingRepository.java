@@ -18,6 +18,8 @@ public interface MovieRatingRepository extends JpaRepository<RatingMovie, Long> 
     Page<RatingMovie> findAllByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     List<RatingMovie> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+    List<RatingMovie> findAllByUserIdOrderByIdDesc(Long userId);
+    List<RatingMovie> findAllByUserId(Long userId);
 
     Optional<RatingMovie> findByMovieIdAndUserId(String movieId, Long userId);
 

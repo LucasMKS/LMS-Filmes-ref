@@ -71,7 +71,18 @@ public class RateMovieService {
         Long userId = authService.getUserIdByIdentifier(email);
         if (userId == null) return List.of();
 
-        List<RatingMovie> ratings = movieRatingRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        List<RatingMovie> ratings;
+        try {
+            ratings = movieRatingRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        } catch (Exception e) {
+            log.warn("Erro ao buscar avaliações ordenadas por createdAt: {}. Tentando por ID.", e.getMessage());
+            try {
+                ratings = movieRatingRepository.findAllByUserIdOrderByIdDesc(userId);
+            } catch (Exception ex) {
+                log.warn("Erro ao buscar avaliações ordenadas por ID: {}. Tentando busca simples.", ex.getMessage());
+                ratings = movieRatingRepository.findAllByUserId(userId);
+            }
+        }
         return enrichWithCatalog(ratings);
     }
 

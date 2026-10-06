@@ -18,6 +18,8 @@ public interface SerieRatingRepository extends JpaRepository<RatingSerie, Long> 
     Page<RatingSerie> findAllByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     List<RatingSerie> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+    List<RatingSerie> findAllByUserIdOrderByIdDesc(Long userId);
+    List<RatingSerie> findAllByUserId(Long userId);
 
     Optional<RatingSerie> findBySerieIdAndUserId(String serieId, Long userId);
 

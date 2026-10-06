@@ -70,7 +70,18 @@ public class RateSerieService {
         Long userId = authService.getUserIdByIdentifier(email);
         if (userId == null) return List.of();
 
-        List<RatingSerie> ratings = serieRatingRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        List<RatingSerie> ratings;
+        try {
+            ratings = serieRatingRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        } catch (Exception e) {
+            log.warn("Erro ao buscar avaliações de séries por createdAt: {}. Tentando por ID.", e.getMessage());
+            try {
+                ratings = serieRatingRepository.findAllByUserIdOrderByIdDesc(userId);
+            } catch (Exception ex) {
+                log.warn("Erro ao buscar avaliações de séries por ID: {}. Tentando busca simples.", ex.getMessage());
+                ratings = serieRatingRepository.findAllByUserId(userId);
+            }
+        }
         return enrichWithCatalog(ratings);
     }
 
