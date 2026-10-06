@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { ratingApi, movieApi, serieApi } from '../services/api';
 import { RatingMovieResponse, RatingSerieResponse, TmdbMovie, TmdbSerie } from '../types';
 import { RatingModal } from '../components/RatingModal';
-import { Star, Film, Tv, MessageSquare, RotateCcw, Calendar, Edit3 } from 'lucide-react';
+import { Star, Film, Tv, MessageSquare, RotateCcw, Calendar, Edit3, Search, X, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const RatingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'movies' | 'series'>('movies');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [visibleLimit, setVisibleLimit] = useState(24);
   const [loading, setLoading] = useState(true);
 
   const [movieRatings, setMovieRatings] = useState<(RatingMovieResponse & { details?: TmdbMovie })[]>([]);
@@ -26,6 +28,10 @@ export const RatingsPage: React.FC = () => {
   useEffect(() => {
     loadRatings();
   }, []);
+
+  useEffect(() => {
+    setVisibleLimit(24);
+  }, [searchQuery, activeTab]);
 
   const loadRatings = async () => {
     setLoading(true);
@@ -69,28 +75,67 @@ export const RatingsPage: React.FC = () => {
     }
   };
 
+  const q = searchQuery.toLowerCase().trim();
+
+  const filteredMovies = movieRatings.filter((item) => {
+    if (!q) return true;
+    return (item.details?.title || '').toLowerCase().includes(q);
+  });
+
+  const filteredSeries = serieRatings.filter((item) => {
+    if (!q) return true;
+    return (item.details?.name || '').toLowerCase().includes(q);
+  });
+
+  const currentList = activeTab === 'movies' ? filteredMovies : filteredSeries;
+  const totalCount = currentList.length;
+  const visibleList = currentList.slice(0, visibleLimit);
+
   return (
     <div className="min-h-screen pb-16 pt-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl font-black text-white flex items-center gap-2">
-              <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
-              Minhas Avaliações
-            </h1>
-            <p className="text-xs text-zinc-400 mt-1">
-              Revise suas notas, comentários e contadores de rewatch
-            </p>
+        <div className="flex flex-col gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-black text-white flex items-center gap-2">
+                <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
+                Minhas Avaliações
+              </h1>
+              <p className="text-xs text-zinc-400 mt-1">
+                Revise suas notas, comentários e contadores de rewatch
+              </p>
+            </div>
+
+            {/* Barra de Busca */}
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar avaliações por título..."
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-9 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                  title="Limpar busca"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
+          <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs w-fit">
             <button
               onClick={() => setActiveTab('movies')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
                 activeTab === 'movies' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <Film className="w-3.5 h-3.5" /> Filmes ({movieRatings.length})
+              <Film className="w-3.5 h-3.5" /> Filmes ({filteredMovies.length})
             </button>
             <button
               onClick={() => setActiveTab('series')}
@@ -98,7 +143,7 @@ export const RatingsPage: React.FC = () => {
                 activeTab === 'series' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <Tv className="w-3.5 h-3.5" /> Séries ({serieRatings.length})
+              <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
             </button>
           </div>
         </div>
@@ -107,160 +152,170 @@ export const RatingsPage: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : totalCount === 0 ? (
+          <div className="text-center py-20 bg-zinc-900/30 rounded-2xl border border-zinc-800">
+            <Star className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-zinc-300">
+              {searchQuery
+                ? `Nenhum resultado para "${searchQuery}"`
+                : activeTab === 'movies'
+                ? 'Nenhum filme avaliado ainda'
+                : 'Nenhuma série avaliada ainda'}
+            </h3>
+          </div>
         ) : (
           <div>
             {activeTab === 'movies' && (
-              movieRatings.length === 0 ? (
-                <div className="text-center py-20 bg-zinc-900/30 rounded-2xl border border-zinc-800">
-                  <Star className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-                  <h3 className="text-lg font-bold text-zinc-300">Nenhum filme avaliado ainda</h3>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {movieRatings.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-all"
-                    >
-                      <Link to={`/filmes/${item.movieId}`} className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950">
-                        <img
-                          src={`https://image.tmdb.org/t/p/w200${item.details?.poster_path}`}
-                          alt={item.details?.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </Link>
-                      <div className="flex-1 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-start justify-between gap-1">
-                            <Link
-                              to={`/filmes/${item.movieId}`}
-                              className="font-bold text-sm text-white hover:text-amber-400 truncate max-w-[180px]"
-                            >
-                              {item.details?.title || `Filme #${item.movieId}`}
-                            </Link>
-                            <button
-                              onClick={() =>
-                                setEditingItem({
-                                  id: item.movieId,
-                                  title: item.details?.title || '',
-                                  type: 'movie',
-                                  rating: item.rating,
-                                  comment: item.comment,
-                                  rewatchCount: item.rewatchCount,
-                                })
-                              }
-                              className="text-zinc-500 hover:text-amber-400 p-1"
-                              title="Editar avaliação"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(visibleList as (RatingMovieResponse & { details?: TmdbMovie })[]).map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-all"
+                  >
+                    <Link to={`/filmes/${item.movieId}`} className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950">
+                      <img
+                        src={`https://image.tmdb.org/t/p/w200${item.details?.poster_path}`}
+                        alt={item.details?.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </Link>
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <Link
+                            to={`/filmes/${item.movieId}`}
+                            className="font-bold text-sm text-white hover:text-amber-400 truncate max-w-[180px]"
+                          >
+                            {item.details?.title || `Filme #${item.movieId}`}
+                          </Link>
+                          <button
+                            onClick={() =>
+                              setEditingItem({
+                                id: item.movieId,
+                                title: item.details?.title || '',
+                                type: 'movie',
+                                rating: item.rating,
+                                comment: item.comment,
+                                rewatchCount: item.rewatchCount,
+                              })
+                            }
+                            className="text-zinc-500 hover:text-amber-400 p-1"
+                            title="Editar avaliação"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
 
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="flex items-center gap-1 text-amber-400 font-black text-sm">
-                              <Star className="w-4 h-4 fill-amber-400" />
-                              <span>{item.rating.toFixed(1)}</span>
-                            </div>
-                            <span className="text-xs text-zinc-500">/ 10</span>
-                            {item.rewatchCount > 0 && (
-                              <span className="text-[11px] text-zinc-400 flex items-center gap-0.5 ml-2">
-                                <RotateCcw className="w-3 h-3 text-amber-500" /> {item.rewatchCount}x
-                              </span>
-                            )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1 text-amber-400 font-black text-sm">
+                            <Star className="w-4 h-4 fill-amber-400" />
+                            <span>{item.rating.toFixed(1)}</span>
                           </div>
-
-                          {item.comment && (
-                            <p className="text-xs text-zinc-300 italic mt-2 line-clamp-2">
-                              "{item.comment}"
-                            </p>
+                          <span className="text-xs text-zinc-500">/ 10</span>
+                          {item.rewatchCount > 0 && (
+                            <span className="text-[11px] text-zinc-400 flex items-center gap-0.5 ml-2">
+                              <RotateCcw className="w-3 h-3 text-amber-500" /> {item.rewatchCount}x
+                            </span>
                           )}
                         </div>
 
-                        <div className="text-[11px] text-zinc-500 mt-2">
-                          {new Date(item.ratedAt).toLocaleDateString('pt-BR')}
-                        </div>
+                        {item.comment && (
+                          <p className="text-xs text-zinc-300 italic mt-2 line-clamp-2">
+                            "{item.comment}"
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="text-[11px] text-zinc-500 mt-2">
+                        {new Date(item.ratedAt).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )
+                  </div>
+                ))}
+              </div>
             )}
 
             {activeTab === 'series' && (
-              serieRatings.length === 0 ? (
-                <div className="text-center py-20 bg-zinc-900/30 rounded-2xl border border-zinc-800">
-                  <Star className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
-                  <h3 className="text-lg font-bold text-zinc-300">Nenhuma série avaliada ainda</h3>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {serieRatings.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-all"
-                    >
-                      <Link to={`/series/${item.serieId}`} className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950">
-                        <img
-                          src={`https://image.tmdb.org/t/p/w200${item.details?.poster_path}`}
-                          alt={item.details?.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </Link>
-                      <div className="flex-1 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-start justify-between gap-1">
-                            <Link
-                              to={`/series/${item.serieId}`}
-                              className="font-bold text-sm text-white hover:text-amber-400 truncate max-w-[180px]"
-                            >
-                              {item.details?.name || `Série #${item.serieId}`}
-                            </Link>
-                            <button
-                              onClick={() =>
-                                setEditingItem({
-                                  id: item.serieId,
-                                  title: item.details?.name || '',
-                                  type: 'serie',
-                                  rating: item.rating,
-                                  comment: item.comment,
-                                  rewatchCount: item.rewatchCount,
-                                })
-                              }
-                              className="text-zinc-500 hover:text-amber-400 p-1"
-                              title="Editar avaliação"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(visibleList as (RatingSerieResponse & { details?: TmdbSerie })[]).map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-all"
+                  >
+                    <Link to={`/series/${item.serieId}`} className="w-20 h-28 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950">
+                      <img
+                        src={`https://image.tmdb.org/t/p/w200${item.details?.poster_path}`}
+                        alt={item.details?.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </Link>
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <Link
+                            to={`/series/${item.serieId}`}
+                            className="font-bold text-sm text-white hover:text-amber-400 truncate max-w-[180px]"
+                          >
+                            {item.details?.name || `Série #${item.serieId}`}
+                          </Link>
+                          <button
+                            onClick={() =>
+                              setEditingItem({
+                                id: item.serieId,
+                                title: item.details?.name || '',
+                                type: 'serie',
+                                rating: item.rating,
+                                comment: item.comment,
+                                rewatchCount: item.rewatchCount,
+                              })
+                            }
+                            className="text-zinc-500 hover:text-amber-400 p-1"
+                            title="Editar avaliação"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
 
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="flex items-center gap-1 text-amber-400 font-black text-sm">
-                              <Star className="w-4 h-4 fill-amber-400" />
-                              <span>{item.rating.toFixed(1)}</span>
-                            </div>
-                            <span className="text-xs text-zinc-500">/ 10</span>
-                            {item.rewatchCount > 0 && (
-                              <span className="text-[11px] text-zinc-400 flex items-center gap-0.5 ml-2">
-                                <RotateCcw className="w-3 h-3 text-amber-500" /> {item.rewatchCount}x
-                              </span>
-                            )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex items-center gap-1 text-amber-400 font-black text-sm">
+                            <Star className="w-4 h-4 fill-amber-400" />
+                            <span>{item.rating.toFixed(1)}</span>
                           </div>
-
-                          {item.comment && (
-                            <p className="text-xs text-zinc-300 italic mt-2 line-clamp-2">
-                              "{item.comment}"
-                            </p>
+                          <span className="text-xs text-zinc-500">/ 10</span>
+                          {item.rewatchCount > 0 && (
+                            <span className="text-[11px] text-zinc-400 flex items-center gap-0.5 ml-2">
+                              <RotateCcw className="w-3 h-3 text-amber-500" /> {item.rewatchCount}x
+                            </span>
                           )}
                         </div>
 
-                        <div className="text-[11px] text-zinc-500 mt-2">
-                          {new Date(item.ratedAt).toLocaleDateString('pt-BR')}
-                        </div>
+                        {item.comment && (
+                          <p className="text-xs text-zinc-300 italic mt-2 line-clamp-2">
+                            "{item.comment}"
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="text-[11px] text-zinc-500 mt-2">
+                        {new Date(item.ratedAt).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Botão Carregar Mais */}
+            {visibleLimit < totalCount && (
+              <div className="flex justify-center mt-12">
+                <button
+                  onClick={() => setVisibleLimit((prev) => prev + 24)}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-amber-400 text-amber-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                  Carregar mais avaliações ({totalCount - visibleLimit} restantes)
+                </button>
+              </div>
             )}
           </div>
         )}

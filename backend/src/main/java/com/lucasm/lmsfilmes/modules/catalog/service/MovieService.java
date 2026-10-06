@@ -145,12 +145,10 @@ public class MovieService {
 
     public Map<String, TmdbDTO> getMoviesBatch(List<String> movieIds) {
         if (movieIds == null || movieIds.isEmpty()) return Map.of();
-        if (movieIds.size() > BATCH_MAX_SIZE) {
-            throw new IllegalArgumentException("Limite de " + BATCH_MAX_SIZE + " filmes por batch excedido");
-        }
+        List<String> safeIds = movieIds.size() > 250 ? movieIds.subList(0, 250) : movieIds;
 
         MovieService self = selfProvider.getObject();
-        return Flux.fromIterable(movieIds)
+        return Flux.fromIterable(safeIds)
                 .flatMap(id -> Mono.fromCallable(() -> self.getMovieDetails(id, false))
                         .subscribeOn(Schedulers.boundedElastic())
                         .map(dto -> Map.entry(id, dto))

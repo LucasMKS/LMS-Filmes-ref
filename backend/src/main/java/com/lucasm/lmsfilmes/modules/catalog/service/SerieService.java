@@ -142,12 +142,10 @@ public class SerieService {
 
     public Map<String, SeriesDTO> getSeriesBatch(List<String> serieIds) {
         if (serieIds == null || serieIds.isEmpty()) return Map.of();
-        if (serieIds.size() > BATCH_MAX_SIZE) {
-            throw new IllegalArgumentException("Limite de " + BATCH_MAX_SIZE + " séries por batch excedido");
-        }
+        List<String> safeIds = serieIds.size() > 250 ? serieIds.subList(0, 250) : serieIds;
 
         SerieService self = selfProvider.getObject();
-        return Flux.fromIterable(serieIds)
+        return Flux.fromIterable(safeIds)
                 .flatMap(id -> Mono.fromCallable(() -> self.getSeriesDetails(id, false))
                         .subscribeOn(Schedulers.boundedElastic())
                         .map(dto -> Map.entry(id, dto))

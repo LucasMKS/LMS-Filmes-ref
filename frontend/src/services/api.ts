@@ -88,7 +88,21 @@ export const movieApi = {
   getRecommendations: async (id: number) => apiClient.get<TmdbPage<TmdbMovie>>(`/movies/${id}/recommendations`),
   getBatch: async (ids: (number | string)[]) => {
     if (!ids || ids.length === 0) return { data: {} as Record<string, TmdbMovie> };
-    return apiClient.get<Record<string, TmdbMovie>>(`/movies/batch?ids=${ids.join(',')}`);
+    const chunkSize = 40;
+    const chunks: (number | string)[][] = [];
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      chunks.push(ids.slice(i, i + chunkSize));
+    }
+    const results = await Promise.all(
+      chunks.map((chunk) =>
+        apiClient
+          .get<Record<string, TmdbMovie>>(`/movies/batch?ids=${chunk.join(',')}`)
+          .then((res) => res.data || {})
+          .catch(() => ({} as Record<string, TmdbMovie>))
+      )
+    );
+    const merged = Object.assign({}, ...results);
+    return { data: merged };
   },
 };
 export const moviesApi = movieApi;
@@ -107,7 +121,21 @@ export const serieApi = {
   getRecommendations: async (id: number) => apiClient.get<TmdbPage<TmdbSerie>>(`/series/${id}/recommendations`),
   getBatch: async (ids: (number | string)[]) => {
     if (!ids || ids.length === 0) return { data: {} as Record<string, TmdbSerie> };
-    return apiClient.get<Record<string, TmdbSerie>>(`/series/batch?ids=${ids.join(',')}`);
+    const chunkSize = 40;
+    const chunks: (number | string)[][] = [];
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      chunks.push(ids.slice(i, i + chunkSize));
+    }
+    const results = await Promise.all(
+      chunks.map((chunk) =>
+        apiClient
+          .get<Record<string, TmdbSerie>>(`/series/batch?ids=${chunk.join(',')}`)
+          .then((res) => res.data || {})
+          .catch(() => ({} as Record<string, TmdbSerie>))
+      )
+    );
+    const merged = Object.assign({}, ...results);
+    return { data: merged };
   },
 };
 export const seriesApi = serieApi;
