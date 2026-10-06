@@ -23,6 +23,9 @@ public class FavoriteActorController {
 
     @GetMapping
     public ResponseEntity<List<FavoriteActor>> getUserActors(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(List.of());
+        }
         return ResponseEntity.ok(favoriteActorService.getUserActors(authentication.getName()));
     }
 
@@ -31,6 +34,9 @@ public class FavoriteActorController {
             @RequestBody(required = false) Map<String, Object> body,
             @RequestParam(required = false) String actorId,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
         FavoriteActor actor = new FavoriteActor();
         String id = actorId;
         if (id == null && body != null && body.get("actorId") != null) {
@@ -44,6 +50,9 @@ public class FavoriteActorController {
     public ResponseEntity<FavoriteStatusResponse> checkActor(
             @PathVariable String actorId,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(new FavoriteStatusResponse(false));
+        }
         boolean isFav = favoriteActorService.isFavoriteActor(actorId, authentication.getName());
         return ResponseEntity.ok(new FavoriteStatusResponse(isFav));
     }
@@ -52,13 +61,17 @@ public class FavoriteActorController {
     public ResponseEntity<Map<String, Boolean>> removeActor(
             @PathVariable String actorId,
             Authentication authentication) {
-        favoriteActorService.removeActor(actorId, authentication.getName());
+        if (authentication != null && authentication.getName() != null) {
+            favoriteActorService.removeActor(actorId, authentication.getName());
+        }
         return ResponseEntity.ok(Map.of("success", true));
     }
 
     @DeleteMapping
     public ResponseEntity<Map<String, Boolean>> clearActors(Authentication authentication) {
-        favoriteActorService.clearActors(authentication.getName());
+        if (authentication != null && authentication.getName() != null) {
+            favoriteActorService.clearActors(authentication.getName());
+        }
         return ResponseEntity.ok(Map.of("success", true));
     }
 
@@ -66,6 +79,9 @@ public class FavoriteActorController {
     public ResponseEntity<List<FavoriteActor>> syncActors(
             @RequestBody List<FavoriteActor> actors,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(List.of());
+        }
         return ResponseEntity.ok(favoriteActorService.syncActors(actors, authentication.getName()));
     }
 }

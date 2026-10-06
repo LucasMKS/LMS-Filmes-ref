@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -142,22 +143,51 @@ public class AuthService {
 
     public Long getUserIdByIdentifier(String identifier) {
         if (identifier == null || identifier.isBlank()) return null;
+        String trimmed = identifier.trim();
         try {
-            return Long.parseLong(identifier.trim());
+            return Long.parseLong(trimmed);
         } catch (NumberFormatException ignored) {}
 
-        return userRepository.findByEmailOrNickname(identifier.trim())
-                .map(User::getId)
-                .orElse(null);
+        try {
+            // Primeiro busca por email case-insensitive direto
+            Optional<User> byEmail = userRepository.findByEmailIgnoreCase(trimmed);
+            if (byEmail.isPresent()) {
+                return byEmail.get().getId();
+            }
+            // Depois busca por nickname
+            Optional<User> byNick = userRepository.findByNicknameIgnoreCase(trimmed);
+            if (byNick.isPresent()) {
+                return byNick.get().getId();
+            }
+            // Fallback pela query combinada
+            return userRepository.findByEmailOrNickname(trimmed)
+                    .map(User::getId)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("Erro ao buscar userId pelo identificador '{}': {}", trimmed, e.getMessage());
+            return null;
+        }
     }
 
     public User getUserByIdentifier(String identifier) {
         if (identifier == null || identifier.isBlank()) return null;
+        String trimmed = identifier.trim();
         try {
-            Long id = Long.parseLong(identifier.trim());
+            Long id = Long.parseLong(trimmed);
             return userRepository.findById(id).orElse(null);
         } catch (NumberFormatException ignored) {}
 
-        return userRepository.findByEmailOrNickname(identifier.trim()).orElse(null);
+        try {
+            Optional<User> byEmail = userRepository.findByEmailIgnoreCase(trimmed);
+            if (byEmail.isPresent()) return byEmail.get();
+
+            Optional<User> byNick = userRepository.findByNicknameIgnoreCase(trimmed);
+            if (byNick.isPresent()) return byNick.get();
+
+            return userRepository.findByEmailOrNickname(trimmed).orElse(null);
+        } catch (Exception e) {
+            log.warn("Erro ao buscar User pelo identificador '{}': {}", trimmed, e.getMessage());
+            return null;
+        }
     }
 }

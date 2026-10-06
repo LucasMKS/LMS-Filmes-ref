@@ -94,16 +94,69 @@ public class GlobalExceptionHandler {
                 .body(body);
     }
 
+    @ExceptionHandler(org.springframework.web.context.request.async.AsyncRequestTimeoutException.class)
+    public ResponseEntity<Void> handleAsyncRequestTimeout(org.springframework.web.context.request.async.AsyncRequestTimeoutException ex) {
+        log.debug("Timeout assíncrono atingido na requisição SSE");
+        return null;
+    }
+
+    @ExceptionHandler(java.io.IOException.class)
+    public ResponseEntity<Void> handleIOException(java.io.IOException ex, jakarta.servlet.http.HttpServletRequest request) {
+        log.debug("Conexão interrompida pelo cliente na rota {}: {}", request.getRequestURI(), ex.getMessage());
+        return null;
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
-        log.error("Exceção inesperada capturada pelo GlobalExceptionHandler: {}", ex.getMessage(), ex);
+    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex, jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) {
+        // Se a conexão for SSE, stream ou conexão abortada pelo cliente, não tentar renderizar JSON no stream
+        if (isSseOrDisconnected(request, response, ex)) {
+            log.debug("Conexão SSE ou encerramento de cliente na rota [{}]: {}", request.getRequestURI(), ex.getMessage());
+            return null;
+        }
+
+        log.error("Exceção inesperada capturada pelo GlobalExceptionHandler na rota [{}]: {}",
+                request.getRequestURI(), ex.getMessage(), ex);
+
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         body.put("error", "Internal Server Error");
         body.put("message", ex.getMessage());
+        body.put("path", request.getRequestURI());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body);
+    }
+
+    private boolean isSseOrDisconnected(jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response, Throwable ex) {
+        if (response.isCommitted()) {
+            return true;
+        }
+        String contentType = response.getContentType();
+        if (contentType != null && contentType.contains("text/event-stream")) {
+            return true;
+        }
+        String uri = request.getRequestURI();
+        if (uri != null && uri.contains("/stream")) {
+            return true;
+        }
+        String acceptHeader = request.getHeader("Accept");
+        if (acceptHeader != null && acceptHeader.contains("text/event-stream")) {
+            return true;
+        }
+
+        Throwable current = ex;
+        while (current != null) {
+            String className = current.getClass().getName();
+            String msg = current.getMessage();
+            if (className.contains("ClientAbortException")
+                    || className.contains("AsyncRequestTimeoutException")
+                    || (msg != null && (msg.contains("Broken pipe") || msg.contains("Connection reset") || msg.contains("connection was aborted")))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+
+        return false;
     }
 }

@@ -31,11 +31,17 @@ public class RateSerieController {
     public ResponseEntity<RatingSerieResponseDTO> rateSerie(
             @Valid @RequestBody SerieRatingRequestDTO request,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
         return ResponseEntity.ok(rateSerieService.rateSerie(request, authentication.getName()));
     }
 
     @GetMapping({"", "/user"})
     public ResponseEntity<List<RatingSerieResponseDTO>> getRatedSeries(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(List.of());
+        }
         return ResponseEntity.ok(rateSerieService.getRatedSeries(authentication.getName()));
     }
 
@@ -47,6 +53,9 @@ public class RateSerieController {
             @RequestParam(required = false) Double minRating,
             @RequestParam(required = false) Double maxRating,
             @RequestParam(required = false) String title) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(Page.empty());
+        }
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ResponseEntity.ok(rateSerieService.getRatedSeriesPaged(authentication.getName(), pageable, minRating, maxRating, title));
     }
@@ -55,6 +64,9 @@ public class RateSerieController {
     public ResponseEntity<?> getSerieRating(
             @PathVariable String serieId,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok().build();
+        }
         RatingSerieResponseDTO dto = rateSerieService.getSerieRating(serieId, authentication.getName());
         return ResponseEntity.ok(dto);
     }
@@ -63,7 +75,9 @@ public class RateSerieController {
     public ResponseEntity<Map<String, Boolean>> deleteSerieRating(
             @PathVariable String serieId,
             Authentication authentication) {
-        rateSerieService.deleteSerieRating(serieId, authentication.getName());
+        if (authentication != null && authentication.getName() != null) {
+            rateSerieService.deleteSerieRating(serieId, authentication.getName());
+        }
         return ResponseEntity.ok(Map.of("success", true));
     }
 
@@ -71,6 +85,9 @@ public class RateSerieController {
     public ResponseEntity<Map<String, RatingStatusDTO>> getRatingStatuses(
             @RequestParam List<String> serieIds,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(Map.of());
+        }
         return ResponseEntity.ok(rateSerieService.getRatingStatuses(authentication.getName(), serieIds));
     }
 }

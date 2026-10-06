@@ -79,21 +79,25 @@ public class SseEmitterManager {
 
     @Scheduled(fixedRate = 25000)
     public void sendHeartbeat() {
+        if (broadcastEmitters.isEmpty() && userEmitters.isEmpty()) {
+            return;
+        }
+
         SseEmitter.SseEventBuilder ping = SseEmitter.event().name("PING").data("keep-alive");
+
         for (SseEmitter emitter : broadcastEmitters) {
             try {
                 emitter.send(ping);
             } catch (Exception e) {
-                try { emitter.complete(); } catch (Exception ignored) {}
                 broadcastEmitters.remove(emitter);
             }
         }
+
         for (Map.Entry<String, List<SseEmitter>> entry : userEmitters.entrySet()) {
             for (SseEmitter emitter : entry.getValue()) {
                 try {
                     emitter.send(ping);
                 } catch (Exception e) {
-                    try { emitter.complete(); } catch (Exception ignored) {}
                     removeEmitter(entry.getKey(), emitter);
                 }
             }

@@ -31,11 +31,17 @@ public class RateMovieController {
     public ResponseEntity<RatingMovieResponseDTO> rateMovie(
             @Valid @RequestBody RatingRequestDTO request,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
         return ResponseEntity.ok(rateMovieService.rateMovie(request, authentication.getName()));
     }
 
     @GetMapping({"", "/user"})
     public ResponseEntity<List<RatingMovieResponseDTO>> getRatedMovies(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(List.of());
+        }
         return ResponseEntity.ok(rateMovieService.getRatedMovies(authentication.getName()));
     }
 
@@ -47,6 +53,9 @@ public class RateMovieController {
             @RequestParam(required = false) Double minRating,
             @RequestParam(required = false) Double maxRating,
             @RequestParam(required = false) String title) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(Page.empty());
+        }
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ResponseEntity.ok(rateMovieService.getRatedMoviesPaged(authentication.getName(), pageable, minRating, maxRating, title));
     }
@@ -55,6 +64,9 @@ public class RateMovieController {
     public ResponseEntity<?> getMovieRating(
             @PathVariable String movieId,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok().build();
+        }
         RatingMovieResponseDTO dto = rateMovieService.getMovieRating(movieId, authentication.getName());
         return ResponseEntity.ok(dto);
     }
@@ -63,7 +75,9 @@ public class RateMovieController {
     public ResponseEntity<Map<String, Boolean>> deleteMovieRating(
             @PathVariable String movieId,
             Authentication authentication) {
-        rateMovieService.deleteMovieRating(movieId, authentication.getName());
+        if (authentication != null && authentication.getName() != null) {
+            rateMovieService.deleteMovieRating(movieId, authentication.getName());
+        }
         return ResponseEntity.ok(Map.of("success", true));
     }
 
@@ -71,6 +85,9 @@ public class RateMovieController {
     public ResponseEntity<Map<String, RatingStatusDTO>> getRatingStatuses(
             @RequestParam List<String> movieIds,
             Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(Map.of());
+        }
         return ResponseEntity.ok(rateMovieService.getRatingStatuses(authentication.getName(), movieIds));
     }
 }
