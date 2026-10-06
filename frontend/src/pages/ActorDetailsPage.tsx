@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { actorApi, favoriteApi } from '../services/api';
 import { TmdbPersonDetail, TmdbPersonCredits } from '../types';
 import { MediaCard } from '../components/MediaCard';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 
 export const ActorDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const actorId = Number(id);
   const { isAuthenticated } = useAuthStore();
 
@@ -112,13 +113,20 @@ export const ActorDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen pb-20 pt-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link
-          to="/atores"
-          className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors mb-6"
+        <button
+          type="button"
+          onClick={() => {
+            if (window.history.length > 1) {
+              navigate(-1);
+            } else {
+              navigate('/atores');
+            }
+          }}
+          className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors mb-6 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          Voltar para Atores
-        </Link>
+          Voltar
+        </button>
 
         {/* Profile Info */}
         <div className="flex flex-col md:flex-row gap-8 items-start bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 mb-12">

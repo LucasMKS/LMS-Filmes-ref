@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { serieApi, watchedEpisodeApi, ratingApi } from '../services/api';
 import { SeasonDetail, EpisodeRatingResponse } from '../types';
 import { EpisodeRatingModal } from '../components/EpisodeRatingModal';
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 
 export const SeasonDetailsPage: React.FC = () => {
   const { id, seasonNumber } = useParams<{ id: string; seasonNumber: string }>();
+  const navigate = useNavigate();
   const serieId = Number(id);
   const seasonNum = Number(seasonNumber);
   const { isAuthenticated } = useAuthStore();
@@ -157,13 +158,20 @@ export const SeasonDetailsPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Navigation & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <Link
-            to={`/series/${serieId}`}
-            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate(`/series/${serieId}`);
+              }
+            }}
+            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            Voltar para a página da série
-          </Link>
+            Voltar
+          </button>
 
           {isAuthenticated && (
             <button

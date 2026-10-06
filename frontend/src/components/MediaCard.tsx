@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Heart, Bookmark, Eye, Film, Tv, Users } from 'lucide-react';
+import { Star, Heart, Bookmark, Eye, Film, Tv, Users, MessageSquare } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { favoriteApi, watchlistApi } from '../services/api';
 import { toast } from 'sonner';
@@ -234,8 +234,17 @@ export const MediaCard: React.FC<MediaCardProps> = ({
           )}
         </div>
 
-        {/* Watchlist status badge in bottom left (if set) */}
-        {watchlistStatus && (
+        {/* Comment Badge (Bottom Left, if comment exists) */}
+        {userRating?.comment ? (
+          <div
+            className="pointer-events-none absolute left-3 bottom-3 z-20 flex items-center gap-1 rounded-xl border border-emerald-500/30 bg-emerald-600/90 px-2 py-1 text-white shadow-lg backdrop-blur-md"
+            title="Possui comentário"
+          >
+            <MessageSquare className="h-3 w-3" />
+            <span className="text-[10px] font-bold">Comentário</span>
+          </div>
+        ) : watchlistStatus ? (
+          /* Watchlist status badge in bottom left (if set and no comment) */
           <div className="pointer-events-none absolute left-3 bottom-3 z-20">
             <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
               {watchlistStatus === 'PLANNING' && 'Planejo'}
@@ -244,7 +253,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
               {watchlistStatus === 'DROPPED' && 'Abandonado'}
             </span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Footer Info */}

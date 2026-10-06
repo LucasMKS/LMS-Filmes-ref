@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ratingApi, movieApi, serieApi } from '../services/api';
+import { ratingApi, movieApi, serieApi, favoriteApi } from '../services/api';
 import { RatingMovieResponse, RatingSerieResponse, TmdbMovie, TmdbSerie } from '../types';
+import { MediaCard } from '../components/MediaCard';
 import { RatingModal } from '../components/RatingModal';
-import { Star, Film, Tv, MessageSquare, RotateCcw, Edit3, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
+import { Star, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const RatingsPage: React.FC = () => {
@@ -15,8 +15,10 @@ export const RatingsPage: React.FC = () => {
 
   const [movieRatings, setMovieRatings] = useState<(RatingMovieResponse & { details?: TmdbMovie })[]>([]);
   const [serieRatings, setSerieRatings] = useState<(RatingSerieResponse & { details?: TmdbSerie })[]>([]);
+  const [favoriteMovieIds, setFavoriteMovieIds] = useState<Set<number>>(new Set());
+  const [favoriteSerieIds, setFavoriteSerieIds] = useState<Set<number>>(new Set());
 
-  // Editing state
+  // Editing state (Quick view / Edit rating modal)
   const [editingItem, setEditingItem] = useState<{
     id: number;
     title: string;
@@ -46,10 +48,17 @@ export const RatingsPage: React.FC = () => {
   const loadRatings = async () => {
     setLoading(true);
     try {
-      const [mRes, sRes] = await Promise.all([
+      const [mRes, sRes, favMRes, favSRes] = await Promise.all([
         ratingApi.getUserMovieRatings(),
         ratingApi.getUserSerieRatings(),
+        favoriteApi.getUserMovies().catch(() => ({ data: [] })),
+        favoriteApi.getUserSeries().catch(() => ({ data: [] })),
       ]);
+
+      const favMSet = new Set<number>((favMRes.data || []).map((f: any) => f.movieId || f.id));
+      const favSSet = new Set<number>((favSRes.data || []).map((s: any) => s.serieId || s.id));
+      setFavoriteMovieIds(favMSet);
+      setFavoriteSerieIds(favSSet);
 
       const movieIds = (mRes.data || []).map((item) => item.movieId).filter(Boolean);
       const serieIds = (sRes.data || []).map((item) => item.serieId).filter(Boolean);
@@ -100,150 +109,6 @@ export const RatingsPage: React.FC = () => {
   const currentList = activeTab === 'movies' ? filteredMovies : filteredSeries;
   const totalCount = currentList.length;
   const visibleList = currentList.slice(0, visibleLimit);
-
-  const renderMovieRatingCard = (item: RatingMovieResponse & { details?: TmdbMovie }) => (
-    <div
-      key={`m-${item.id}`}
-      className="flex gap-4 p-4 rounded-2xl bg-[#14141c] border border-white/[0.06] hover:border-purple-500/20 hover:-translate-y-1 transition-all duration-300 shadow-xl"
-    >
-      <Link to={`/filmes/${item.movieId}`} className="w-20 h-28 flex-shrink-0 rounded-xl overflow-hidden bg-white/5 relative">
-        <img
-          src={
-            item.details?.poster_path
-              ? `https://image.tmdb.org/t/p/w200${item.details.poster_path}`
-              : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=200'
-          }
-          alt={item.details?.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-purple-600/90 text-[9px] font-bold text-white flex items-center gap-0.5">
-          <Film className="w-2.5 h-2.5" />
-        </div>
-      </Link>
-      <div className="flex-1 flex flex-col justify-between">
-        <div>
-          <div className="flex items-start justify-between gap-1">
-            <Link
-              to={`/filmes/${item.movieId}`}
-              className="font-bold text-sm text-white/90 hover:text-purple-300 truncate max-w-[170px]"
-            >
-              {item.details?.title || `Filme #${item.movieId}`}
-            </Link>
-            <button
-              onClick={() =>
-                setEditingItem({
-                  id: item.movieId,
-                  title: item.details?.title || '',
-                  type: 'movie',
-                  rating: item.rating,
-                  comment: item.comment,
-                  rewatchCount: item.rewatchCount,
-                })
-              }
-              className="text-zinc-500 hover:text-amber-400 p-1"
-              title="Editar avaliação"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 mt-1">
-            <div className="flex items-center gap-1 text-yellow-300 font-extrabold text-sm bg-yellow-500/15 border border-yellow-500/30 px-2 py-0.5 rounded-lg shadow-sm">
-              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-              <span>{item.rating != null ? Number(item.rating).toFixed(1) : '0.0'}</span>
-            </div>
-            {item.rewatchCount && item.rewatchCount > 0 ? (
-              <span className="text-[11px] text-purple-300 bg-purple-500/15 border border-purple-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1 font-semibold">
-                <RotateCcw className="w-3 h-3 text-purple-400" /> {item.rewatchCount}x
-              </span>
-            ) : null}
-          </div>
-
-          {item.comment && (
-            <p className="text-xs text-zinc-300 italic mt-2 line-clamp-2 bg-[#0a0a0f]/40 p-1.5 rounded-lg border border-white/[0.04]">
-              "{item.comment}"
-            </p>
-          )}
-        </div>
-
-        <div className="text-[10px] text-zinc-500 mt-2 font-medium">
-          Avaliado em: {new Date(item.ratedAt).toLocaleDateString('pt-BR')}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderSerieRatingCard = (item: RatingSerieResponse & { details?: TmdbSerie }) => (
-    <div
-      key={`s-${item.id}`}
-      className="flex gap-4 p-4 rounded-2xl bg-[#14141c] border border-white/[0.06] hover:border-violet-500/20 hover:-translate-y-1 transition-all duration-300 shadow-xl"
-    >
-      <Link to={`/series/${item.serieId}`} className="w-20 h-28 flex-shrink-0 rounded-xl overflow-hidden bg-white/5 relative">
-        <img
-          src={
-            item.details?.poster_path
-              ? `https://image.tmdb.org/t/p/w200${item.details.poster_path}`
-              : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=200'
-          }
-          alt={item.details?.name}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-violet-600/90 text-[9px] font-bold text-white flex items-center gap-0.5">
-          <Tv className="w-2.5 h-2.5" />
-        </div>
-      </Link>
-      <div className="flex-1 flex flex-col justify-between">
-        <div>
-          <div className="flex items-start justify-between gap-1">
-            <Link
-              to={`/series/${item.serieId}`}
-              className="font-bold text-sm text-white/90 hover:text-violet-300 truncate max-w-[170px]"
-            >
-              {item.details?.name || `Série #${item.serieId}`}
-            </Link>
-            <button
-              onClick={() =>
-                setEditingItem({
-                  id: item.serieId,
-                  title: item.details?.name || '',
-                  type: 'serie',
-                  rating: item.rating,
-                  comment: item.comment,
-                  rewatchCount: item.rewatchCount,
-                })
-              }
-              className="text-zinc-500 hover:text-amber-400 p-1"
-              title="Editar avaliação"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 mt-1">
-            <div className="flex items-center gap-1 text-yellow-300 font-extrabold text-sm bg-yellow-500/15 border border-yellow-500/30 px-2 py-0.5 rounded-lg shadow-sm">
-              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-              <span>{item.rating != null ? Number(item.rating).toFixed(1) : '0.0'}</span>
-            </div>
-            {item.rewatchCount && item.rewatchCount > 0 ? (
-              <span className="text-[11px] text-violet-300 bg-violet-500/15 border border-violet-500/20 px-2 py-0.5 rounded-lg flex items-center gap-1 font-semibold">
-                <RotateCcw className="w-3 h-3 text-violet-400" /> {item.rewatchCount}x
-              </span>
-            ) : null}
-          </div>
-
-          {item.comment && (
-            <p className="text-xs text-zinc-300 italic mt-2 line-clamp-2 bg-[#0a0a0f]/40 p-1.5 rounded-lg border border-white/[0.04]">
-              "{item.comment}"
-            </p>
-          )}
-        </div>
-
-        <div className="text-[10px] text-zinc-500 mt-2 font-medium">
-          Avaliado em: {new Date(item.ratedAt).toLocaleDateString('pt-BR')}
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen pb-16 pt-6">
@@ -359,8 +224,34 @@ export const RatingsPage: React.FC = () => {
                   <p className="text-white/40 text-sm font-medium">Nenhum filme avaliado</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4">
-                  {filteredMovies.slice(0, visibleLimit).map(renderMovieRatingCard)}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {filteredMovies.slice(0, visibleLimit).map((item) => (
+                    <MediaCard
+                      key={`split-m-${item.id}`}
+                      id={item.movieId}
+                      title={item.details?.title || `Filme #${item.movieId}`}
+                      posterPath={item.details?.poster_path || null}
+                      voteAverage={item.details?.vote_average || 0}
+                      releaseDate={item.details?.release_date}
+                      type="movie"
+                      isFavoriteInitial={favoriteMovieIds.has(item.movieId)}
+                      userRating={{
+                        rating: item.rating,
+                        comment: item.comment,
+                        rewatchCount: item.rewatchCount,
+                      }}
+                      onQuickView={() =>
+                        setEditingItem({
+                          id: item.movieId,
+                          title: item.details?.title || '',
+                          type: 'movie',
+                          rating: item.rating,
+                          comment: item.comment,
+                          rewatchCount: item.rewatchCount,
+                        })
+                      }
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -384,8 +275,34 @@ export const RatingsPage: React.FC = () => {
                   <p className="text-white/40 text-sm font-medium">Nenhuma série avaliada</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4">
-                  {filteredSeries.slice(0, visibleLimit).map(renderSerieRatingCard)}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {filteredSeries.slice(0, visibleLimit).map((item) => (
+                    <MediaCard
+                      key={`split-s-${item.id}`}
+                      id={item.serieId}
+                      title={item.details?.name || `Série #${item.serieId}`}
+                      posterPath={item.details?.poster_path || null}
+                      voteAverage={item.details?.vote_average || 0}
+                      releaseDate={item.details?.first_air_date}
+                      type="serie"
+                      isFavoriteInitial={favoriteSerieIds.has(item.serieId)}
+                      userRating={{
+                        rating: item.rating,
+                        comment: item.comment,
+                        rewatchCount: item.rewatchCount,
+                      }}
+                      onQuickView={() =>
+                        setEditingItem({
+                          id: item.serieId,
+                          title: item.details?.name || '',
+                          type: 'serie',
+                          rating: item.rating,
+                          comment: item.comment,
+                          rewatchCount: item.rewatchCount,
+                        })
+                      }
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -404,14 +321,66 @@ export const RatingsPage: React.FC = () => {
         ) : (
           <div>
             {activeTab === 'movies' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(visibleList as (RatingMovieResponse & { details?: TmdbMovie })[]).map(renderMovieRatingCard)}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+                {(visibleList as (RatingMovieResponse & { details?: TmdbMovie })[]).map((item) => (
+                  <MediaCard
+                    key={`m-${item.id}`}
+                    id={item.movieId}
+                    title={item.details?.title || `Filme #${item.movieId}`}
+                    posterPath={item.details?.poster_path || null}
+                    voteAverage={item.details?.vote_average || 0}
+                    releaseDate={item.details?.release_date}
+                    type="movie"
+                    isFavoriteInitial={favoriteMovieIds.has(item.movieId)}
+                    userRating={{
+                      rating: item.rating,
+                      comment: item.comment,
+                      rewatchCount: item.rewatchCount,
+                    }}
+                    onQuickView={() =>
+                      setEditingItem({
+                        id: item.movieId,
+                        title: item.details?.title || '',
+                        type: 'movie',
+                        rating: item.rating,
+                        comment: item.comment,
+                        rewatchCount: item.rewatchCount,
+                      })
+                    }
+                  />
+                ))}
               </div>
             )}
 
             {activeTab === 'series' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(visibleList as (RatingSerieResponse & { details?: TmdbSerie })[]).map(renderSerieRatingCard)}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+                {(visibleList as (RatingSerieResponse & { details?: TmdbSerie })[]).map((item) => (
+                  <MediaCard
+                    key={`s-${item.id}`}
+                    id={item.serieId}
+                    title={item.details?.name || `Série #${item.serieId}`}
+                    posterPath={item.details?.poster_path || null}
+                    voteAverage={item.details?.vote_average || 0}
+                    releaseDate={item.details?.first_air_date}
+                    type="serie"
+                    isFavoriteInitial={favoriteSerieIds.has(item.serieId)}
+                    userRating={{
+                      rating: item.rating,
+                      comment: item.comment,
+                      rewatchCount: item.rewatchCount,
+                    }}
+                    onQuickView={() =>
+                      setEditingItem({
+                        id: item.serieId,
+                        title: item.details?.name || '',
+                        type: 'serie',
+                        rating: item.rating,
+                        comment: item.comment,
+                        rewatchCount: item.rewatchCount,
+                      })
+                    }
+                  />
+                ))}
               </div>
             )}
 

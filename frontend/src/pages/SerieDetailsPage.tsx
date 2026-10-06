@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   serieApi, 
   favoriteApi, 
@@ -20,12 +20,15 @@ import {
   ListPlus, 
   ArrowLeft, 
   Play, 
-  Layers 
+  Layers,
+  MessageSquare,
+  Edit3
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const SerieDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const serieId = Number(id);
   const { isAuthenticated } = useAuthStore();
 
@@ -170,13 +173,20 @@ export const SerieDetailsPage: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent" />
 
         <div className="relative max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-end pb-8">
-          <Link
-            to="/series"
-            className="absolute top-6 left-4 sm:left-6 lg:left-8 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white backdrop-blur-md text-sm transition-colors border border-zinc-800"
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/series');
+              }
+            }}
+            className="absolute top-6 left-4 sm:left-6 lg:left-8 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-white backdrop-blur-md text-sm transition-colors border border-zinc-800 shadow-md cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -289,6 +299,42 @@ export const SerieDetailsPage: React.FC = () => {
                 {serie.overview || 'Nenhuma sinopse disponível em português.'}
               </p>
             </div>
+
+            {/* User Review Display if already rated */}
+            {userRating != null && (
+              <div className="p-4 bg-gradient-to-r from-amber-500/10 via-zinc-900/60 to-zinc-900/40 border border-amber-500/30 rounded-2xl max-w-3xl mt-4 shadow-lg">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 text-amber-400 font-extrabold text-xs rounded-lg border border-amber-500/40">
+                      <Star className="w-3.5 h-3.5 fill-amber-400" /> Minha Avaliação: {Number(userRating).toFixed(1)}/10
+                    </span>
+                    {userRewatch > 0 && (
+                      <span className="text-[11px] font-semibold text-zinc-400 px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/50">
+                        Reassistido {userRewatch}x
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setIsRatingModalOpen(true)}
+                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-400 font-medium transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    Editar
+                  </button>
+                </div>
+                {userComment ? (
+                  <div className="flex items-start gap-2.5 pt-1">
+                    <MessageSquare className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block mb-0.5">Meu Comentário</span>
+                      <p className="text-sm text-zinc-200 leading-relaxed italic">"{userComment}"</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-400 italic">Sem comentário escrito. Clique em editar para adicionar uma resenha.</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
