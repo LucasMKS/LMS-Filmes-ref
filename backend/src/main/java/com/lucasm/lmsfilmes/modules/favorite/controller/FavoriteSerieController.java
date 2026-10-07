@@ -33,7 +33,13 @@ public class FavoriteSerieController {
         if (id == null && body != null && body.get("serieId") != null) {
             id = String.valueOf(body.get("serieId"));
         }
-        boolean isFav = favoriteSerieService.toggleFavorite(id, authentication.getName());
+        Boolean targetState = null;
+        if (body != null && body.get("favorite") != null) {
+            targetState = Boolean.valueOf(String.valueOf(body.get("favorite")));
+        }
+        boolean isFav = targetState != null
+                ? favoriteSerieService.setFavorite(id, targetState, authentication.getName())
+                : favoriteSerieService.toggleFavorite(id, authentication.getName());
         return ResponseEntity.ok(new FavoriteStatusResponse(isFav));
     }
 

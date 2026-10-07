@@ -153,12 +153,14 @@ export const actorsApi = actorApi;
 // --- FAVORITES API ---
 export const favoriteApi = {
   getUserMovies: async () => apiClient.get<FavoriteMovieItem[]>('/favorite/movie'),
-  addMovie: async (movieId: number) => apiClient.post<FavoriteMovieItem>('/favorite/movie', { movieId }),
+  addMovie: async (movieId: number, favorite?: boolean) =>
+    apiClient.post<FavoriteStatusResponse>('/favorite/movie', { movieId, favorite }),
   removeMovie: async (movieId: number) => apiClient.delete<SimpleApiResponse>(`/favorite/movie/${movieId}`),
   checkMovie: async (movieId: number) => apiClient.get<FavoriteStatusResponse>(`/favorite/movie/check/${movieId}`),
 
   getUserSeries: async () => apiClient.get<FavoriteSerieItem[]>('/favorite/serie'),
-  addSerie: async (serieId: number) => apiClient.post<FavoriteSerieItem>('/favorite/serie', { serieId }),
+  addSerie: async (serieId: number, favorite?: boolean) =>
+    apiClient.post<FavoriteStatusResponse>('/favorite/serie', { serieId, favorite }),
   removeSerie: async (serieId: number) => apiClient.delete<SimpleApiResponse>(`/favorite/serie/${serieId}`),
   checkSerie: async (serieId: number) => apiClient.get<FavoriteStatusResponse>(`/favorite/serie/check/${serieId}`),
 
@@ -198,14 +200,26 @@ export const watchedEpisodeApi = {
 
 // --- RATINGS API ---
 export const ratingApi = {
-  rateMovie: async (payload: { movieId: number; rating: number; comment?: string; rewatchCount?: number }) =>
-    apiClient.post<RatedMovie>('/rate/movie', payload),
+  rateMovie: async (payload: {
+    movieId: number;
+    rating: number;
+    title?: string;
+    poster_path?: string | null;
+    comment?: string;
+    rewatchCount?: number;
+  }) => apiClient.post<RatedMovie>('/rate/movie', payload),
   getMovieRating: async (movieId: number) => apiClient.get<RatedMovie>(`/rate/movie/${movieId}`),
   getUserMovieRatings: async () => apiClient.get<RatedMovie[]>('/rate/movie/user'),
   deleteMovieRating: async (movieId: number) => apiClient.delete<SimpleApiResponse>(`/rate/movie/${movieId}`),
 
-  rateSerie: async (payload: { serieId: number; rating: number; comment?: string; rewatchCount?: number }) =>
-    apiClient.post<RatedSerie>('/rate/serie', payload),
+  rateSerie: async (payload: {
+    serieId: number;
+    rating: number;
+    title?: string;
+    poster_path?: string | null;
+    comment?: string;
+    rewatchCount?: number;
+  }) => apiClient.post<RatedSerie>('/rate/serie', payload),
   getSerieRating: async (serieId: number) => apiClient.get<RatedSerie>(`/rate/serie/${serieId}`),
   getUserSerieRatings: async () => apiClient.get<RatedSerie[]>('/rate/serie/user'),
   deleteSerieRating: async (serieId: number) => apiClient.delete<SimpleApiResponse>(`/rate/serie/${serieId}`),

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Heart, Bookmark, Eye, Film, Tv, Users, MessageSquare } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
-import { favoriteApi, watchlistApi } from '../services/api';
+import { useFavoritesStore } from '../store/useFavoritesStore';
+import { useWatchlistStore } from '../store/useWatchlistStore';
 import { toast } from 'sonner';
 
 interface MediaCardProps {
@@ -31,26 +32,27 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   voteAverage,
   releaseDate,
   type,
-  isFavoriteInitial = false,
-  watchlistStatusInitial = null,
+  isFavoriteInitial,
+  watchlistStatusInitial,
   userRating = null,
   onFavoriteChange,
   onWatchlistChange,
   onQuickView,
 }) => {
   const { isAuthenticated } = useAuthStore();
-  const [isFavorite, setIsFavorite] = useState(isFavoriteInitial);
-  const [watchlistStatus, setWatchlistStatus] = useState<string | null>(watchlistStatusInitial);
+  const { isFavorite: checkFavoriteStore, toggleFavorite: toggleFavoriteStore } = useFavoritesStore();
+  const { inWatchlist: checkWatchlistStore, toggleWatchlist: toggleWatchlistStore } = useWatchlistStore();
+
+  const isFavorite = isFavoriteInitial !== undefined
+    ? isFavoriteInitial
+    : checkFavoriteStore(id, type);
+
+  const inWatchlist = watchlistStatusInitial !== undefined
+    ? Boolean(watchlistStatusInitial)
+    : checkWatchlistStore(id, type);
+
   const [loadingFav, setLoadingFav] = useState(false);
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
-
-  useEffect(() => {
-    setIsFavorite(isFavoriteInitial);
-  }, [isFavoriteInitial]);
-
-  useEffect(() => {
-    setWatchlistStatus(watchlistStatusInitial);
-  }, [watchlistStatusInitial]);
 
   const imageUrl = posterPath
     ? `https://image.tmdb.org/t/p/w500${posterPath}`
@@ -70,24 +72,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
     setLoadingFav(true);
     try {
-      if (isFavorite) {
-        if (type === 'movie') {
-          await favoriteApi.removeMovie(id);
-        } else {
-          await favoriteApi.removeSerie(id);
-        }
-        setIsFavorite(false);
-        onFavoriteChange?.(id, false);
-        toast.info('Removido dos favoritos');
-      } else {
-        if (type === 'movie') {
-          await favoriteApi.addMovie(id);
-        } else {
-          await favoriteApi.addSerie(id);
-        }
-        setIsFavorite(true);
-        onFavoriteChange?.(id, true);
+      const nextFav = await toggleFavoriteStore(id, type);
+      onFavoriteChange?.(id, nextFav);
+      if (nextFav) {
         toast.success('Adicionado aos favoritos!');
+      } else {
+        toast.info('Removido dos favoritos');
       }
     } catch {
       toast.error('Erro ao atualizar favorito');
@@ -106,25 +96,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
     setLoadingWatchlist(true);
     try {
-      if (watchlistStatus) {
-        if (type === 'movie') {
-          await watchlistApi.removeMovie(id);
-        } else {
-          await watchlistApi.removeSerie(id);
-        }
-        setWatchlistStatus(null);
-        onWatchlistChange?.(id, null);
-        toast.info('Removido da watchlist');
+      const nextIn = await toggleWatchlistStore(id, type);
+      onWatchlistChange?.(id, nextIn ? 'PLANNING' : null);
+      if (nextIn) {
+        toast.success('Adicionado à watchlist!');
       } else {
-        const defaultStatus = 'PLANNING';
-        if (type === 'movie') {
-          await watchlistApi.setMovieStatus(id, defaultStatus);
-        } else {
-          await watchlistApi.setSerieStatus(id, defaultStatus);
-        }
-        setWatchlistStatus(defaultStatus);
-        onWatchlistChange?.(id, defaultStatus);
-        toast.success('Adicionado à watchlist (Planejo Assistir)!');
+        toast.info('Removido da watchlist');
       }
     } catch {
       toast.error('Erro ao atualizar watchlist');
@@ -185,15 +162,15 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             type="button"
             onClick={handleToggleWatchlist}
             disabled={loadingWatchlist}
-            aria-label={watchlistStatus ? 'Remover da Watchlist' : 'Adicionar à Watchlist'}
+            aria-label={inWatchlist ? 'Remover da Watchlist' : 'Adicionar à Watchlist'}
             className={`h-8 w-8 rounded-full border transition-all duration-300 hover:scale-110 flex items-center justify-center ${
-              watchlistStatus
+              inWatchlist
                 ? 'border-emerald-500/50 bg-emerald-600/90 text-white shadow-[0_4px_12px_rgba(16,185,129,0.35)] backdrop-blur-sm hover:bg-emerald-500'
                 : 'border-white/10 bg-[#0a0a0f]/60 text-white/60 backdrop-blur-sm hover:bg-[#0a0a0f]/90 hover:text-white hover:border-white/20'
             }`}
-            title={watchlistStatus ? 'Na Watchlist' : 'Adicionar à Watchlist'}
+            title={inWatchlist ? 'Na Watchlist' : 'Adicionar à Watchlist'}
           >
-            <Bookmark className={`h-3.5 w-3.5 ${watchlistStatus ? 'fill-current' : ''}`} />
+            <Bookmark className={`h-3.5 w-3.5 ${inWatchlist ? 'fill-current' : ''}`} />
           </button>
         </div>
 
@@ -235,7 +212,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         </div>
 
         {/* Comment Badge (Bottom Left, if comment exists) */}
-        {userRating?.comment ? (
+        {userRating?.comment && (
           <div
             className="pointer-events-none absolute left-3 bottom-3 z-20 flex items-center gap-1 rounded-xl border border-emerald-500/30 bg-emerald-600/90 px-2 py-1 text-white shadow-lg backdrop-blur-md"
             title="Possui comentário"
@@ -243,17 +220,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
             <MessageSquare className="h-3 w-3" />
             <span className="text-[10px] font-bold">Comentário</span>
           </div>
-        ) : watchlistStatus ? (
-          /* Watchlist status badge in bottom left (if set and no comment) */
-          <div className="pointer-events-none absolute left-3 bottom-3 z-20">
-            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
-              {watchlistStatus === 'PLANNING' && 'Planejo'}
-              {watchlistStatus === 'WATCHING' && 'Assistindo'}
-              {watchlistStatus === 'COMPLETED' && 'Concluído'}
-              {watchlistStatus === 'DROPPED' && 'Abandonado'}
-            </span>
-          </div>
-        ) : null}
+        )}
       </div>
 
       {/* Footer Info */}

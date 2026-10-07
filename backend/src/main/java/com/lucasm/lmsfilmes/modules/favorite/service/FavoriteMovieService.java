@@ -29,25 +29,32 @@ public class FavoriteMovieService {
 
     @Transactional
     public boolean toggleFavorite(String movieId, String email) {
+        return setFavorite(movieId, null, email);
+    }
+
+    @Transactional
+    public boolean setFavorite(String movieId, Boolean targetState, String email) {
         Long userId = authService.getUserIdByIdentifier(email);
         if (userId == null) throw new ResourceNotFoundException("Usuário não encontrado: " + email);
 
         Optional<FavoriteMovie> opt = favoriteMovieRepository.findByUserIdAndMovieId(userId, movieId);
         if (opt.isPresent()) {
             FavoriteMovie fav = opt.get();
-            fav.setFavorite(!fav.isFavorite());
+            boolean newState = targetState != null ? targetState : !fav.isFavorite();
+            fav.setFavorite(newState);
             favoriteMovieRepository.save(fav);
-            return fav.isFavorite();
+            return newState;
         } else {
+            boolean newState = targetState != null ? targetState : true;
             FavoriteMovie fav = new FavoriteMovie();
             fav.setUserId(userId);
             fav.setMovieId(movieId);
-            fav.setFavorite(true);
+            fav.setFavorite(newState);
             favoriteMovieRepository.save(fav);
 
             // Sincroniza em memória
             eventPublisher.publishEvent(new CatalogSyncEvent(movieId, null, null, false));
-            return true;
+            return newState;
         }
     }
 

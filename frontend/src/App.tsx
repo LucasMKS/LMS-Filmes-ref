@@ -23,6 +23,8 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 import { useAuthStore } from './store/useAuthStore';
 import { useUserRatingsStore } from './store/useUserRatingsStore';
+import { useFavoritesStore } from './store/useFavoritesStore';
+import { useWatchlistStore } from './store/useWatchlistStore';
 import { Film } from 'lucide-react';
 
 const queryClient = new QueryClient({
@@ -75,6 +77,8 @@ const Footer: React.FC = () => {
 export const App: React.FC = () => {
   const { initialize, isAuthenticated } = useAuthStore();
   const { fetchRatings } = useUserRatingsStore();
+  const { fetchFavorites } = useFavoritesStore();
+  const { fetchWatchlist } = useWatchlistStore();
 
   useEffect(() => {
     initialize();
@@ -83,8 +87,10 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchRatings();
+      fetchFavorites();
+      fetchWatchlist();
     }
-  }, [isAuthenticated, fetchRatings]);
+  }, [isAuthenticated, fetchRatings, fetchFavorites, fetchWatchlist]);
 
   return (
     <QueryClientProvider client={queryClient}>

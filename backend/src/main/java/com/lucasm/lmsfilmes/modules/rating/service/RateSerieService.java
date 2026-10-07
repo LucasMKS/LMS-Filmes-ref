@@ -33,6 +33,7 @@ public class RateSerieService {
     private final SerieRepository catalogSerieRepository;
     private final AuthService authService;
     private final ApplicationEventPublisher eventPublisher;
+    private final com.lucasm.lmsfilmes.modules.favorite.repository.WatchlistSerieRepository watchlistSerieRepository;
 
     @Transactional
     @CacheEvict(value = {"userRatedSeries", "dashboardStats", "mediaBalance"}, allEntries = true)
@@ -63,7 +64,23 @@ public class RateSerieService {
 
         RatingSerie saved = serieRatingRepository.save(serie);
 
-        return toDto(saved, request.getTitle(), request.getPoster_path());
+        // Remove automaticamente da watchlist ao avaliar ou re-avaliar
+        try {
+            watchlistSerieRepository.findByUserIdAndSerieId(userId, request.getSerieId())
+                    .ifPresent(watchlistSerieRepository::delete);
+        } catch (Exception e) {
+            log.warn("Não foi possível remover série {} da watchlist: {}", request.getSerieId(), e.getMessage());
+        }
+
+        Serie cat = catalogSerieRepository.findById(request.getSerieId()).orElse(null);
+        String finalTitle = request.getTitle() != null && !request.getTitle().isBlank()
+                ? request.getTitle()
+                : (cat != null ? cat.getTitle() : null);
+        String finalPoster = request.getPoster_path() != null && !request.getPoster_path().isBlank()
+                ? request.getPoster_path()
+                : (cat != null ? cat.getPosterPath() : null);
+
+        return toDto(saved, finalTitle, finalPoster);
     }
 
     public List<RatingSerieResponseDTO> getRatedSeries(String email) {

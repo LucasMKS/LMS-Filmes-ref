@@ -34,6 +34,7 @@ public class RateMovieService {
     private final MovieRepository catalogMovieRepository;
     private final AuthService authService;
     private final ApplicationEventPublisher eventPublisher;
+    private final com.lucasm.lmsfilmes.modules.favorite.repository.WatchlistMovieRepository watchlistMovieRepository;
 
     @Transactional
     @CacheEvict(value = {"userRatedMovies", "dashboardStats", "mediaBalance"}, allEntries = true)
@@ -64,7 +65,23 @@ public class RateMovieService {
 
         RatingMovie saved = movieRatingRepository.save(movie);
 
-        return toDto(saved, request.getTitle(), request.getPoster_path());
+        // Remove automaticamente da watchlist ao avaliar ou re-avaliar
+        try {
+            watchlistMovieRepository.findByUserIdAndMovieId(userId, request.getMovieId())
+                    .ifPresent(watchlistMovieRepository::delete);
+        } catch (Exception e) {
+            log.warn("Não foi possível remover filme {} da watchlist: {}", request.getMovieId(), e.getMessage());
+        }
+
+        Movie cat = catalogMovieRepository.findById(request.getMovieId()).orElse(null);
+        String finalTitle = request.getTitle() != null && !request.getTitle().isBlank()
+                ? request.getTitle()
+                : (cat != null ? cat.getTitle() : null);
+        String finalPoster = request.getPoster_path() != null && !request.getPoster_path().isBlank()
+                ? request.getPoster_path()
+                : (cat != null ? cat.getPosterPath() : null);
+
+        return toDto(saved, finalTitle, finalPoster);
     }
 
     public List<RatingMovieResponseDTO> getRatedMovies(String email) {

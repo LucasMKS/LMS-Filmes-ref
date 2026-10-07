@@ -29,25 +29,32 @@ public class FavoriteSerieService {
 
     @Transactional
     public boolean toggleFavorite(String serieId, String email) {
+        return setFavorite(serieId, null, email);
+    }
+
+    @Transactional
+    public boolean setFavorite(String serieId, Boolean targetState, String email) {
         Long userId = authService.getUserIdByIdentifier(email);
         if (userId == null) throw new ResourceNotFoundException("Usuário não encontrado: " + email);
 
         Optional<FavoriteSerie> opt = favoriteSerieRepository.findByUserIdAndSerieId(userId, serieId);
         if (opt.isPresent()) {
             FavoriteSerie fav = opt.get();
-            fav.setFavorite(!fav.isFavorite());
+            boolean newState = targetState != null ? targetState : !fav.isFavorite();
+            fav.setFavorite(newState);
             favoriteSerieRepository.save(fav);
-            return fav.isFavorite();
+            return newState;
         } else {
+            boolean newState = targetState != null ? targetState : true;
             FavoriteSerie fav = new FavoriteSerie();
             fav.setUserId(userId);
             fav.setSerieId(serieId);
-            fav.setFavorite(true);
+            fav.setFavorite(newState);
             favoriteSerieRepository.save(fav);
 
             // Sincroniza em memória
             eventPublisher.publishEvent(new CatalogSyncEvent(serieId, null, null, true));
-            return true;
+            return newState;
         }
     }
 

@@ -33,7 +33,13 @@ public class FavoriteMovieController {
         if (id == null && body != null && body.get("movieId") != null) {
             id = String.valueOf(body.get("movieId"));
         }
-        boolean isFav = favoriteMovieService.toggleFavorite(id, authentication.getName());
+        Boolean targetState = null;
+        if (body != null && body.get("favorite") != null) {
+            targetState = Boolean.valueOf(String.valueOf(body.get("favorite")));
+        }
+        boolean isFav = targetState != null
+                ? favoriteMovieService.setFavorite(id, targetState, authentication.getName())
+                : favoriteMovieService.toggleFavorite(id, authentication.getName());
         return ResponseEntity.ok(new FavoriteStatusResponse(isFav));
     }
 

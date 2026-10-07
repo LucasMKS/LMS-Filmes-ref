@@ -22,6 +22,7 @@ export const RatingsPage: React.FC = () => {
   const [editingItem, setEditingItem] = useState<{
     id: number;
     title: string;
+    posterPath?: string | null;
     type: 'movie' | 'serie';
     rating: number;
     comment?: string;
@@ -244,6 +245,7 @@ export const RatingsPage: React.FC = () => {
                         setEditingItem({
                           id: item.movieId,
                           title: item.details?.title || '',
+                          posterPath: item.details?.poster_path || null,
                           type: 'movie',
                           rating: item.rating,
                           comment: item.comment,
@@ -295,6 +297,7 @@ export const RatingsPage: React.FC = () => {
                         setEditingItem({
                           id: item.serieId,
                           title: item.details?.name || '',
+                          posterPath: item.details?.poster_path || null,
                           type: 'serie',
                           rating: item.rating,
                           comment: item.comment,
@@ -354,6 +357,7 @@ export const RatingsPage: React.FC = () => {
                       setEditingItem({
                         id: item.movieId,
                         title: item.details?.title || '',
+                        posterPath: item.details?.poster_path || null,
                         type: 'movie',
                         rating: item.rating,
                         comment: item.comment,
@@ -386,6 +390,7 @@ export const RatingsPage: React.FC = () => {
                       setEditingItem({
                         id: item.serieId,
                         title: item.details?.name || '',
+                        posterPath: item.details?.poster_path || null,
                         type: 'serie',
                         rating: item.rating,
                         comment: item.comment,
@@ -420,6 +425,7 @@ export const RatingsPage: React.FC = () => {
           mediaId={editingItem.id}
           mediaType={editingItem.type}
           mediaTitle={editingItem.title}
+          posterPath={editingItem.posterPath}
           initialRating={editingItem.rating}
           initialComment={editingItem.comment || ''}
           initialRewatchCount={editingItem.rewatchCount || 0}

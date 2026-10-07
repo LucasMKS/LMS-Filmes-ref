@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Star, MessageSquare, RotateCcw, Trash2 } from 'lucide-react';
 import { ratingApi } from '../services/api';
 import { useUserRatingsStore } from '../store/useUserRatingsStore';
+import { useWatchlistStore } from '../store/useWatchlistStore';
 import { toast } from 'sonner';
 
 interface RatingModalProps {
@@ -10,6 +11,7 @@ interface RatingModalProps {
   mediaId: number;
   mediaType: 'movie' | 'serie';
   mediaTitle: string;
+  posterPath?: string | null;
   initialRating?: number;
   initialComment?: string;
   initialRewatchCount?: number;
@@ -22,6 +24,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
   mediaId,
   mediaType,
   mediaTitle,
+  posterPath,
   initialRating = 0,
   initialComment = '',
   initialRewatchCount = 0,
@@ -57,6 +60,8 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         await ratingApi.rateMovie({
           movieId: mediaId,
           rating,
+          title: mediaTitle,
+          poster_path: posterPath || undefined,
           comment: comment.trim() || undefined,
           rewatchCount,
         });
@@ -65,10 +70,14 @@ export const RatingModal: React.FC<RatingModalProps> = ({
           comment: comment.trim() || undefined,
           rewatchCount,
         });
+        // Remove automaticamente da Watchlist ao avaliar ou reavaliar
+        useWatchlistStore.getState().removeMovieWatchlist(mediaId);
       } else {
         await ratingApi.rateSerie({
           serieId: mediaId,
           rating,
+          title: mediaTitle,
+          poster_path: posterPath || undefined,
           comment: comment.trim() || undefined,
           rewatchCount,
         });
@@ -77,6 +86,8 @@ export const RatingModal: React.FC<RatingModalProps> = ({
           comment: comment.trim() || undefined,
           rewatchCount,
         });
+        // Remove automaticamente da Watchlist ao avaliar ou reavaliar
+        useWatchlistStore.getState().removeSerieWatchlist(mediaId);
       }
       toast.success('Avaliação salva com sucesso!');
       onSuccess?.();
@@ -110,6 +121,18 @@ export const RatingModal: React.FC<RatingModalProps> = ({
     }
   };
 
+  const handleStarMouseMove = (e: React.MouseEvent<HTMLButtonElement>, starVal: number) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isLeft = e.clientX - rect.left < rect.width / 2;
+    setHoverRating(isLeft ? starVal - 0.5 : starVal);
+  };
+
+  const handleStarClick = (e: React.MouseEvent<HTMLButtonElement>, starVal: number) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isLeft = e.clientX - rect.left < rect.width / 2;
+    setRating(isLeft ? starVal - 0.5 : starVal);
+  };
+
   const displayRating = hoverRating !== null ? hoverRating : rating;
 
   return (
@@ -129,34 +152,78 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-          {/* Star Rating Selector */}
-          <div className="flex flex-col items-center justify-center gap-2">
+          {/* Star Rating Selector (Supports Half Stars) */}
+          <div className="flex flex-col items-center justify-center gap-3">
             <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starVal) => (
-                <button
-                  type="button"
-                  key={starVal}
-                  onMouseEnter={() => setHoverRating(starVal)}
-                  onMouseLeave={() => setHoverRating(null)}
-                  onClick={() => setRating(starVal)}
-                  className="p-1 text-zinc-600 hover:text-amber-400 transition-colors"
-                >
-                  <Star
-                    className={`w-6 h-6 ${
-                      starVal <= displayRating
-                        ? 'text-amber-400 fill-amber-400'
-                        : 'text-zinc-700'
-                    }`}
-                  />
-                </button>
-              ))}
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starVal) => {
+                const isFull = displayRating >= starVal;
+                const isHalf = !isFull && displayRating >= starVal - 0.5;
+
+                return (
+                  <button
+                    type="button"
+                    key={starVal}
+                    onMouseMove={(e) => handleStarMouseMove(e, starVal)}
+                    onMouseLeave={() => setHoverRating(null)}
+                    onClick={(e) => handleStarClick(e, starVal)}
+                    className="relative p-1 transition-transform hover:scale-110 cursor-pointer"
+                    title={`${starVal} estrelas (clique à esquerda para ${starVal - 0.5})`}
+                  >
+                    <div className="relative w-6 h-6">
+                      {/* Background Empty Star */}
+                      <Star className="w-6 h-6 text-zinc-700" />
+                      {/* Foreground Filled Star (full or half) */}
+                      {(isFull || isHalf) && (
+                        <div
+                          className="absolute inset-0 overflow-hidden"
+                          style={{ width: isFull ? '100%' : '50%' }}
+                        >
+                          <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-amber-400">
-                {displayRating > 0 ? displayRating.toFixed(1) : '-'}
-              </span>
-              <span className="text-sm text-zinc-500">/ 10</span>
+
+            {/* Slider and Buttons for fine tuning */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setRating((prev) => Math.max(0.5, Number((prev - 0.5).toFixed(1))))}
+                className="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-xs text-zinc-300 font-semibold transition-colors"
+                title="Diminuir meia estrela (-0.5)"
+              >
+                -0.5
+              </button>
+
+              <div className="flex items-center gap-1.5 min-w-[5rem] justify-center">
+                <span className="text-3xl font-black text-amber-400">
+                  {displayRating > 0 ? displayRating.toFixed(1) : '-'}
+                </span>
+                <span className="text-sm text-zinc-500 font-medium">/ 10</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setRating((prev) => Math.min(10, Number((prev + 0.5).toFixed(1))))}
+                className="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-xs text-zinc-300 font-semibold transition-colors"
+                title="Aumentar meia estrela (+0.5)"
+              >
+                +0.5
+              </button>
             </div>
+
+            <input
+              type="range"
+              min="0.5"
+              max="10"
+              step="0.5"
+              value={rating || 0.5}
+              onChange={(e) => setRating(parseFloat(e.target.value))}
+              className="w-full max-w-xs accent-amber-400 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+            />
           </div>
 
           {/* Comment */}

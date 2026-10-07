@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 export const WatchlistPage: React.FC = () => {
   const { movieRatings, serieRatings } = useUserRatingsStore();
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'serie'>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(24);
   const [loading, setLoading] = useState(true);
@@ -43,7 +42,7 @@ export const WatchlistPage: React.FC = () => {
 
   useEffect(() => {
     setVisibleLimit(24);
-  }, [searchQuery, filterType, statusFilter, viewMode]);
+  }, [searchQuery, filterType, viewMode]);
 
   const loadWatchlist = async () => {
     setLoading(true);
@@ -84,34 +83,6 @@ export const WatchlistPage: React.FC = () => {
       toast.error('Erro ao carregar watchlist');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleStatusChangeMovie = async (movieId: number, newStatus: string) => {
-    try {
-      await watchlistApi.setMovieStatus(movieId, newStatus);
-      setMovieItems((prev) =>
-        prev.map((item) =>
-          item.movieId === movieId ? { ...item, status: newStatus as WatchlistStatus } : item
-        )
-      );
-      toast.success('Status atualizado');
-    } catch {
-      toast.error('Erro ao atualizar status');
-    }
-  };
-
-  const handleStatusChangeSerie = async (serieId: number, newStatus: string) => {
-    try {
-      await watchlistApi.setSerieStatus(serieId, newStatus);
-      setSerieItems((prev) =>
-        prev.map((item) =>
-          item.serieId === serieId ? { ...item, status: newStatus as WatchlistStatus } : item
-        )
-      );
-      toast.success('Status atualizado');
-    } catch {
-      toast.error('Erro ao atualizar status');
     }
   };
 
@@ -180,7 +151,6 @@ export const WatchlistPage: React.FC = () => {
   // Filtragem com suporte a texto de busca
   const q = searchQuery.toLowerCase().trim();
   const filteredMovies = movieItems.filter((item) => {
-    if (statusFilter !== 'ALL' && item.status !== statusFilter) return false;
     if (q) {
       const title = (item.details?.title || '').toLowerCase();
       if (!title.includes(q)) return false;
@@ -189,7 +159,6 @@ export const WatchlistPage: React.FC = () => {
   });
 
   const filteredSeries = serieItems.filter((item) => {
-    if (statusFilter !== 'ALL' && item.status !== statusFilter) return false;
     if (q) {
       const name = (item.details?.name || '').toLowerCase();
       if (!name.includes(q)) return false;
@@ -225,7 +194,7 @@ export const WatchlistPage: React.FC = () => {
                 Minha Watchlist ({movieItems.length + serieItems.length})
               </h1>
               <p className="text-xs text-zinc-400 mt-1">
-                Controle tudo o que você planeja ver, está assistindo ou já concluiu
+                Filmes e séries que você quer assistir
               </p>
             </div>
 
@@ -251,7 +220,7 @@ export const WatchlistPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Filtros de Tipo, Status e Seletor de Layout */}
+          {/* Filtros de Tipo e Seletor de Layout */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
             <div className="flex flex-wrap items-center gap-3">
               {/* Media Type Filter */}
@@ -281,19 +250,6 @@ export const WatchlistPage: React.FC = () => {
                   <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
                 </button>
               </div>
-
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-[#14141c] border border-white/[0.08] text-xs text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 font-medium"
-              >
-                <option value="ALL">Todos os Status</option>
-                <option value="PLANNING">Planejo Assistir</option>
-                <option value="WATCHING">Assistindo</option>
-                <option value="COMPLETED">Concluído</option>
-                <option value="DROPPED">Abandonado</option>
-              </select>
             </div>
 
             {/* Botão da Roleta e Seletor de Visualização */}
@@ -375,31 +331,19 @@ export const WatchlistPage: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {filteredMovies.slice(0, visibleLimit).map((item) => (
-                    <div key={`split-m-${item.movieId}`} className="flex flex-col gap-2">
-                      <MediaCard
-                        id={item.movieId}
-                        title={item.details?.title || `Filme #${item.movieId}`}
-                        posterPath={item.details?.poster_path || null}
-                        voteAverage={item.details?.vote_average || 0}
-                        releaseDate={item.details?.release_date}
-                        type="movie"
-                        watchlistStatusInitial={item.status}
-                        userRating={movieRatings[item.movieId] || null}
-                        onWatchlistChange={(_, status) => {
-                          if (!status) handleRemoveMovie(item.movieId);
-                        }}
-                      />
-                      <select
-                        value={item.status}
-                        onChange={(e) => handleStatusChangeMovie(item.movieId, e.target.value)}
-                        className="w-full bg-[#14141c] border border-white/[0.08] text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-medium"
-                      >
-                        <option value="PLANNING">Planejo</option>
-                        <option value="WATCHING">Assistindo</option>
-                        <option value="COMPLETED">Concluído</option>
-                        <option value="DROPPED">Abandonado</option>
-                      </select>
-                    </div>
+                    <MediaCard
+                      key={`split-m-${item.movieId}`}
+                      id={item.movieId}
+                      title={item.details?.title || `Filme #${item.movieId}`}
+                      posterPath={item.details?.poster_path || null}
+                      voteAverage={item.details?.vote_average || 0}
+                      releaseDate={item.details?.release_date}
+                      type="movie"
+                      userRating={movieRatings[item.movieId] || null}
+                      onWatchlistChange={(_, status) => {
+                        if (!status) handleRemoveMovie(item.movieId);
+                      }}
+                    />
                   ))}
                 </div>
               )}
@@ -426,31 +370,19 @@ export const WatchlistPage: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {filteredSeries.slice(0, visibleLimit).map((item) => (
-                    <div key={`split-s-${item.serieId}`} className="flex flex-col gap-2">
-                      <MediaCard
-                        id={item.serieId}
-                        title={item.details?.name || `Série #${item.serieId}`}
-                        posterPath={item.details?.poster_path || null}
-                        voteAverage={item.details?.vote_average || 0}
-                        releaseDate={item.details?.first_air_date}
-                        type="serie"
-                        watchlistStatusInitial={item.status}
-                        userRating={serieRatings[item.serieId] || null}
-                        onWatchlistChange={(_, status) => {
-                          if (!status) handleRemoveSerie(item.serieId);
-                        }}
-                      />
-                      <select
-                        value={item.status}
-                        onChange={(e) => handleStatusChangeSerie(item.serieId, e.target.value)}
-                        className="w-full bg-[#14141c] border border-white/[0.08] text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-medium"
-                      >
-                        <option value="PLANNING">Planejo</option>
-                        <option value="WATCHING">Assistindo</option>
-                        <option value="COMPLETED">Concluído</option>
-                        <option value="DROPPED">Abandonado</option>
-                      </select>
-                    </div>
+                    <MediaCard
+                      key={`split-s-${item.serieId}`}
+                      id={item.serieId}
+                      title={item.details?.name || `Série #${item.serieId}`}
+                      posterPath={item.details?.poster_path || null}
+                      voteAverage={item.details?.vote_average || 0}
+                      releaseDate={item.details?.first_air_date}
+                      type="serie"
+                      userRating={serieRatings[item.serieId] || null}
+                      onWatchlistChange={(_, status) => {
+                        if (!status) handleRemoveSerie(item.serieId);
+                      }}
+                    />
                   ))}
                 </div>
               )}
@@ -477,60 +409,36 @@ export const WatchlistPage: React.FC = () => {
                 if (entry.type === 'movie') {
                   const item = entry.data as WatchlistMovie & { details?: TmdbMovie };
                   return (
-                    <div key={`m-${item.movieId}`} className="flex flex-col gap-2">
-                      <MediaCard
-                        id={item.movieId}
-                        title={item.details?.title || `Filme #${item.movieId}`}
-                        posterPath={item.details?.poster_path || null}
-                        voteAverage={item.details?.vote_average || 0}
-                        releaseDate={item.details?.release_date}
-                        type="movie"
-                        watchlistStatusInitial={item.status}
-                        userRating={movieRatings[item.movieId] || null}
-                        onWatchlistChange={(_, status) => {
-                          if (!status) handleRemoveMovie(item.movieId);
-                        }}
-                      />
-                      <select
-                        value={item.status}
-                        onChange={(e) => handleStatusChangeMovie(item.movieId, e.target.value)}
-                        className="w-full bg-[#14141c] border border-white/[0.08] text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-medium"
-                      >
-                        <option value="PLANNING">Planejo</option>
-                        <option value="WATCHING">Assistindo</option>
-                        <option value="COMPLETED">Concluído</option>
-                        <option value="DROPPED">Abandonado</option>
-                      </select>
-                    </div>
+                    <MediaCard
+                      key={`m-${item.movieId}`}
+                      id={item.movieId}
+                      title={item.details?.title || `Filme #${item.movieId}`}
+                      posterPath={item.details?.poster_path || null}
+                      voteAverage={item.details?.vote_average || 0}
+                      releaseDate={item.details?.release_date}
+                      type="movie"
+                      userRating={movieRatings[item.movieId] || null}
+                      onWatchlistChange={(_, status) => {
+                        if (!status) handleRemoveMovie(item.movieId);
+                      }}
+                    />
                   );
                 } else {
                   const item = entry.data as WatchlistSerie & { details?: TmdbSerie };
                   return (
-                    <div key={`s-${item.serieId}`} className="flex flex-col gap-2">
-                      <MediaCard
-                        id={item.serieId}
-                        title={item.details?.name || `Série #${item.serieId}`}
-                        posterPath={item.details?.poster_path || null}
-                        voteAverage={item.details?.vote_average || 0}
-                        releaseDate={item.details?.first_air_date}
-                        type="serie"
-                        watchlistStatusInitial={item.status}
-                        userRating={serieRatings[item.serieId] || null}
-                        onWatchlistChange={(_, status) => {
-                          if (!status) handleRemoveSerie(item.serieId);
-                        }}
-                      />
-                      <select
-                        value={item.status}
-                        onChange={(e) => handleStatusChangeSerie(item.serieId, e.target.value)}
-                        className="w-full bg-[#14141c] border border-white/[0.08] text-[11px] text-zinc-300 rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-medium"
-                      >
-                        <option value="PLANNING">Planejo</option>
-                        <option value="WATCHING">Assistindo</option>
-                        <option value="COMPLETED">Concluído</option>
-                        <option value="DROPPED">Abandonado</option>
-                      </select>
-                    </div>
+                    <MediaCard
+                      key={`s-${item.serieId}`}
+                      id={item.serieId}
+                      title={item.details?.name || `Série #${item.serieId}`}
+                      posterPath={item.details?.poster_path || null}
+                      voteAverage={item.details?.vote_average || 0}
+                      releaseDate={item.details?.first_air_date}
+                      type="serie"
+                      userRating={serieRatings[item.serieId] || null}
+                      onWatchlistChange={(_, status) => {
+                        if (!status) handleRemoveSerie(item.serieId);
+                      }}
+                    />
                   );
                 }
               })}

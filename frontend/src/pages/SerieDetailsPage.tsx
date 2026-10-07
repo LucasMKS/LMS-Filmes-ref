@@ -12,6 +12,8 @@ import { RatingModal } from '../components/RatingModal';
 import { AddToListModal } from '../components/AddToListModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUserRatingsStore } from '../store/useUserRatingsStore';
+import { useFavoritesStore } from '../store/useFavoritesStore';
+import { useWatchlistStore } from '../store/useWatchlistStore';
 import { 
   Star, 
   Heart, 
@@ -34,13 +36,19 @@ export const SerieDetailsPage: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
   const { serieRatings } = useUserRatingsStore();
 
+  const isFavorite = useFavoritesStore((state) => state.isFavorite(serieId, 'serie'));
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
+  const setSerieFavorite = useFavoritesStore((state) => state.setSerieFavorite);
+
+  const isInWatchlist = useWatchlistStore((state) => state.inWatchlist(serieId, 'serie'));
+  const toggleWatchlist = useWatchlistStore((state) => state.toggleWatchlist);
+  const setSerieWatchlist = useWatchlistStore((state) => state.setSerieWatchlist);
+
   const [serie, setSerie] = useState<TmdbSerieDetail | null>(null);
   const [recommendations, setRecommendations] = useState<TmdbSerie[]>([]);
   const [loading, setLoading] = useState(true);
 
   // User state
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [watchlistStatus, setWatchlistStatus] = useState<string | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [userComment, setUserComment] = useState<string>('');
   const [userRewatch, setUserRewatch] = useState<number>(0);
@@ -48,6 +56,7 @@ export const SerieDetailsPage: React.FC = () => {
   // Modals
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
+  const [showTrailerModal, setShowTrailerModal] = useState(false);
 
   useEffect(() => {
     if (serieId) {
@@ -84,11 +93,14 @@ export const SerieDetailsPage: React.FC = () => {
         ratingApi.getSerieRating(serieId),
       ]);
 
-      if (favRes.status === 'fulfilled') {
-        setIsFavorite(favRes.value.data.isFavorite);
+      if (favRes.status === 'fulfilled' && favRes.value.data) {
+        const data = favRes.value.data as any;
+        const isFav = Boolean(data.isFavorite ?? data.favorite);
+        setSerieFavorite(serieId, isFav);
       }
       if (watchRes.status === 'fulfilled') {
-        setWatchlistStatus(watchRes.value.data.status);
+        const inList = Boolean(watchRes.value.data && watchRes.value.data.status);
+        setSerieWatchlist(serieId, inList);
       }
       if (rateRes.status === 'fulfilled' && rateRes.value.data) {
         setUserRating(rateRes.value.data.rating);
@@ -108,34 +120,28 @@ export const SerieDetailsPage: React.FC = () => {
       return;
     }
     try {
-      if (isFavorite) {
-        await favoriteApi.removeSerie(serieId);
-        setIsFavorite(false);
-        toast.info('Removido dos favoritos');
-      } else {
-        await favoriteApi.addSerie(serieId);
-        setIsFavorite(true);
+      const isNowFav = await toggleFavorite(serieId, 'serie');
+      if (isNowFav) {
         toast.success('Adicionado aos favoritos!');
+      } else {
+        toast.info('Removido dos favoritos');
       }
     } catch (err) {
       toast.error('Erro ao atualizar favoritos');
     }
   };
 
-  const handleWatchlistChange = async (newStatus: string) => {
+  const handleToggleWatchlist = async () => {
     if (!isAuthenticated) {
       toast.error('Faça login para gerenciar sua watchlist');
       return;
     }
     try {
-      if (watchlistStatus === newStatus) {
-        await watchlistApi.removeSerie(serieId);
-        setWatchlistStatus(null);
-        toast.info('Removido da watchlist');
+      const isNowIn = await toggleWatchlist(serieId, 'serie');
+      if (isNowIn) {
+        toast.success('Adicionado à watchlist!');
       } else {
-        await watchlistApi.setSerieStatus(serieId, newStatus);
-        setWatchlistStatus(newStatus);
-        toast.success('Status da watchlist atualizado!');
+        toast.info('Removido da watchlist');
       }
     } catch (err) {
       toast.error('Erro ao atualizar watchlist');
@@ -160,6 +166,12 @@ export const SerieDetailsPage: React.FC = () => {
       </div>
     );
   }
+
+  const trailer = serie.videos?.results?.find(
+    (v) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser')
+  );
+
+  const watchProviders = serie['watch/providers']?.results?.BR;
 
   return (
     <div className="min-h-screen pb-20">
@@ -247,23 +259,36 @@ export const SerieDetailsPage: React.FC = () => {
 
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
+              {/* Watch Trailer */}
+              {trailer && (
+                <button
+                  onClick={() => setShowTrailerModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-red-600/20 cursor-pointer"
+                >
+                  <Play className="w-4 h-4 fill-white" />
+                  Trailer Oficial
+                </button>
+              )}
+
+              {/* Rate button */}
               <button
                 onClick={() => setIsRatingModalOpen(true)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl border transition-all shadow-sm cursor-pointer ${
                   userRating
-                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-200 hover:bg-zinc-800'
+                    ? 'bg-amber-500/25 border-amber-500/60 text-amber-300 shadow-amber-500/20 hover:bg-amber-500/35'
+                    : 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-amber-500/10 hover:bg-amber-500/25 hover:border-amber-400'
                 }`}
               >
-                <Star className={`w-4 h-4 ${userRating ? 'fill-amber-400' : ''}`} />
-                {userRating ? `Minha Nota: ${userRating}/10` : 'Avaliar Série'}
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                {userRating ? `Minha Nota: ${Number(userRating).toFixed(1)}/10` : 'Avaliar Série'}
               </button>
 
+              {/* Favorite button */}
               <button
                 onClick={handleToggleFavorite}
-                className={`p-2.5 rounded-xl border transition-all ${
+                className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                   isFavorite
-                    ? 'bg-red-500/20 border-red-500/50 text-red-500'
+                    ? 'bg-red-500/20 border-red-500/50 text-red-500 hover:bg-red-500/30'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`}
                 title={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
@@ -271,23 +296,24 @@ export const SerieDetailsPage: React.FC = () => {
                 <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500' : ''}`} />
               </button>
 
-              <div className="relative inline-flex">
-                <select
-                  value={watchlistStatus || ''}
-                  onChange={(e) => handleWatchlistChange(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 text-xs text-zinc-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 font-medium"
-                >
-                  <option value="">+ Watchlist</option>
-                  <option value="PLANNING">Planejo Assistir</option>
-                  <option value="WATCHING">Assistindo</option>
-                  <option value="COMPLETED">Concluído</option>
-                  <option value="DROPPED">Abandonado</option>
-                </select>
-              </div>
+              {/* Watchlist toggle button */}
+              <button
+                onClick={handleToggleWatchlist}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border transition-all cursor-pointer ${
+                  isInWatchlist
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
+                }`}
+                title={isInWatchlist ? 'Remover da Watchlist' : 'Adicionar à Watchlist'}
+              >
+                <Bookmark className={`w-4 h-4 ${isInWatchlist ? 'fill-emerald-400 text-emerald-400' : ''}`} />
+                <span>{isInWatchlist ? 'Na Watchlist' : 'Quero Assistir'}</span>
+              </button>
 
+              {/* Add to Custom List */}
               <button
                 onClick={() => setIsListModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
               >
                 <ListPlus className="w-4 h-4 text-amber-400" />
                 Listas
@@ -339,6 +365,85 @@ export const SerieDetailsPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Streaming / Watch Providers */}
+        {watchProviders && (
+          <div className="mt-12 p-6 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
+            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+              <Tv className="w-5 h-5 text-amber-400" />
+              Onde Assistir no Brasil
+            </h3>
+            <div className="flex flex-wrap gap-8">
+              {watchProviders.flatrate && (
+                <div>
+                  <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Streaming</p>
+                  <div className="flex flex-wrap gap-3">
+                    {watchProviders.flatrate.map((provider) => (
+                      <div key={provider.provider_id} className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
+                        <img
+                          src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                          alt={provider.provider_name}
+                          className="w-6 h-6 rounded-lg"
+                        />
+                        <span className="text-xs font-medium text-zinc-200">{provider.provider_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {watchProviders.buy && (
+                <div>
+                  <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Comprar</p>
+                  <div className="flex flex-wrap gap-3">
+                    {watchProviders.buy.map((provider) => (
+                      <div key={provider.provider_id} className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
+                        <img
+                          src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                          alt={provider.provider_name}
+                          className="w-6 h-6 rounded-lg"
+                        />
+                        <span className="text-xs font-medium text-zinc-200">{provider.provider_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Cast Carousel */}
+        {serie.credits?.cast && serie.credits.cast.length > 0 && (
+          <div className="mt-12">
+            <h3 className="text-xl font-bold text-white mb-4">Elenco Principal</h3>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-800">
+              {serie.credits.cast.slice(0, 15).map((actor) => (
+                <Link
+                  key={actor.id}
+                  to={`/atores/${actor.id}`}
+                  className="flex-shrink-0 w-28 group text-center"
+                >
+                  <div className="w-28 h-36 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 group-hover:border-amber-500/50 transition-colors">
+                    <img
+                      src={
+                        actor.profile_path
+                          ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                          : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
+                      }
+                      alt={actor.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  </div>
+                  <p className="text-xs font-semibold text-zinc-200 mt-2 truncate group-hover:text-amber-400">
+                    {actor.name}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 truncate">{actor.character}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Seasons Section */}
         <div className="mt-12">
@@ -408,12 +513,33 @@ export const SerieDetailsPage: React.FC = () => {
         )}
       </div>
 
+      {/* Trailer Modal */}
+      {showTrailerModal && trailer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative w-full max-w-4xl aspect-video bg-zinc-950 rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl">
+            <button
+              onClick={() => setShowTrailerModal(false)}
+              className="absolute top-4 right-4 z-10 px-3 py-1.5 bg-zinc-900/80 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold border border-zinc-700 cursor-pointer"
+            >
+              Fechar
+            </button>
+            <iframe
+              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1`}
+              title="YouTube trailer"
+              allow="autoplay; encrypted-media; fullscreen"
+              className="w-full h-full"
+            />
+          </div>
+        </div>
+      )}
+
       <RatingModal
         isOpen={isRatingModalOpen}
         onClose={() => setIsRatingModalOpen(false)}
         mediaId={serieId}
         mediaType="serie"
         mediaTitle={serie.name}
+        posterPath={serie.poster_path}
         initialRating={userRating || 0}
         initialComment={userComment}
         initialRewatchCount={userRewatch}

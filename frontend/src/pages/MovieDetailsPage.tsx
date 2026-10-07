@@ -12,6 +12,8 @@ import { RatingModal } from '../components/RatingModal';
 import { AddToListModal } from '../components/AddToListModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUserRatingsStore } from '../store/useUserRatingsStore';
+import { useFavoritesStore } from '../store/useFavoritesStore';
+import { useWatchlistStore } from '../store/useWatchlistStore';
 import { 
   Star, 
   Heart, 
@@ -37,13 +39,19 @@ export const MovieDetailsPage: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
   const { movieRatings } = useUserRatingsStore();
 
+  const isFavorite = useFavoritesStore((state) => state.isFavorite(movieId, 'movie'));
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
+  const setMovieFavorite = useFavoritesStore((state) => state.setMovieFavorite);
+
+  const isInWatchlist = useWatchlistStore((state) => state.inWatchlist(movieId, 'movie'));
+  const toggleWatchlist = useWatchlistStore((state) => state.toggleWatchlist);
+  const setMovieWatchlist = useWatchlistStore((state) => state.setMovieWatchlist);
+
   const [movie, setMovie] = useState<TmdbMovieDetail | null>(null);
   const [recommendations, setRecommendations] = useState<TmdbMovie[]>([]);
   const [loading, setLoading] = useState(true);
 
   // User relations state
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [watchlistStatus, setWatchlistStatus] = useState<string | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [userComment, setUserComment] = useState<string>('');
   const [userRewatch, setUserRewatch] = useState<number>(0);
@@ -88,11 +96,14 @@ export const MovieDetailsPage: React.FC = () => {
         ratingApi.getMovieRating(movieId),
       ]);
 
-      if (favRes.status === 'fulfilled') {
-        setIsFavorite(favRes.value.data.isFavorite);
+      if (favRes.status === 'fulfilled' && favRes.value.data) {
+        const data = favRes.value.data as any;
+        const isFav = Boolean(data.isFavorite ?? data.favorite);
+        setMovieFavorite(movieId, isFav);
       }
       if (watchRes.status === 'fulfilled') {
-        setWatchlistStatus(watchRes.value.data.status);
+        const inList = Boolean(watchRes.value.data && watchRes.value.data.status);
+        setMovieWatchlist(movieId, inList);
       }
       if (rateRes.status === 'fulfilled' && rateRes.value.data) {
         setUserRating(rateRes.value.data.rating);
@@ -112,34 +123,28 @@ export const MovieDetailsPage: React.FC = () => {
       return;
     }
     try {
-      if (isFavorite) {
-        await favoriteApi.removeMovie(movieId);
-        setIsFavorite(false);
-        toast.info('Removido dos favoritos');
-      } else {
-        await favoriteApi.addMovie(movieId);
-        setIsFavorite(true);
+      const isNowFav = await toggleFavorite(movieId, 'movie');
+      if (isNowFav) {
         toast.success('Adicionado aos favoritos!');
+      } else {
+        toast.info('Removido dos favoritos');
       }
     } catch (err) {
       toast.error('Erro ao atualizar favoritos');
     }
   };
 
-  const handleWatchlistChange = async (newStatus: string) => {
+  const handleToggleWatchlist = async () => {
     if (!isAuthenticated) {
       toast.error('Faça login para gerenciar sua watchlist');
       return;
     }
     try {
-      if (watchlistStatus === newStatus) {
-        await watchlistApi.removeMovie(movieId);
-        setWatchlistStatus(null);
-        toast.info('Removido da watchlist');
+      const isNowIn = await toggleWatchlist(movieId, 'movie');
+      if (isNowIn) {
+        toast.success('Adicionado à watchlist!');
       } else {
-        await watchlistApi.setMovieStatus(movieId, newStatus);
-        setWatchlistStatus(newStatus);
-        toast.success('Status da watchlist atualizado!');
+        toast.info('Removido da watchlist');
       }
     } catch (err) {
       toast.error('Erro ao atualizar watchlist');
@@ -276,22 +281,22 @@ export const MovieDetailsPage: React.FC = () => {
               {/* Rate button */}
               <button
                 onClick={() => setIsRatingModalOpen(true)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl border transition-all shadow-sm cursor-pointer ${
                   userRating
-                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-200 hover:bg-zinc-800'
+                    ? 'bg-amber-500/25 border-amber-500/60 text-amber-300 shadow-amber-500/20 hover:bg-amber-500/35'
+                    : 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-amber-500/10 hover:bg-amber-500/25 hover:border-amber-400'
                 }`}
               >
-                <Star className={`w-4 h-4 ${userRating ? 'fill-amber-400' : ''}`} />
-                {userRating ? `Minha Nota: ${userRating}/10` : 'Avaliar'}
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                {userRating ? `Minha Nota: ${Number(userRating).toFixed(1)}/10` : 'Avaliar Filme'}
               </button>
 
               {/* Favorite button */}
               <button
                 onClick={handleToggleFavorite}
-                className={`p-2.5 rounded-xl border transition-all ${
+                className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                   isFavorite
-                    ? 'bg-red-500/20 border-red-500/50 text-red-500'
+                    ? 'bg-red-500/20 border-red-500/50 text-red-500 hover:bg-red-500/30'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`}
                 title={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
@@ -299,20 +304,19 @@ export const MovieDetailsPage: React.FC = () => {
                 <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500' : ''}`} />
               </button>
 
-              {/* Watchlist dropdown */}
-              <div className="relative inline-flex">
-                <select
-                  value={watchlistStatus || ''}
-                  onChange={(e) => handleWatchlistChange(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 text-xs text-zinc-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500 font-medium"
-                >
-                  <option value="">+ Watchlist</option>
-                  <option value="PLANNING">Planejo Assistir</option>
-                  <option value="WATCHING">Assistindo</option>
-                  <option value="COMPLETED">Concluído</option>
-                  <option value="DROPPED">Abandonado</option>
-                </select>
-              </div>
+              {/* Watchlist toggle button */}
+              <button
+                onClick={handleToggleWatchlist}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border transition-all cursor-pointer ${
+                  isInWatchlist
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
+                }`}
+                title={isInWatchlist ? 'Remover da Watchlist' : 'Adicionar à Watchlist'}
+              >
+                <Bookmark className={`w-4 h-4 ${isInWatchlist ? 'fill-emerald-400 text-emerald-400' : ''}`} />
+                <span>{isInWatchlist ? 'Na Watchlist' : 'Quero Assistir'}</span>
+              </button>
 
               {/* Add to Custom List */}
               <button
@@ -498,6 +502,7 @@ export const MovieDetailsPage: React.FC = () => {
         mediaId={movieId}
         mediaType="movie"
         mediaTitle={movie.title}
+        posterPath={movie.poster_path}
         initialRating={userRating || 0}
         initialComment={userComment}
         initialRewatchCount={userRewatch}

@@ -1,5 +1,7 @@
 package com.lucasm.lmsfilmes.modules.rating.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -19,9 +21,19 @@ public class RatingRequestDTO {
 
     private String title;
 
+    @JsonProperty("poster_path")
+    @JsonAlias({"posterPath", "poster_path"})
     private String poster_path;
 
     private String comment;
 
     private Integer rewatchCount;
+
+    public String getPosterPath() {
+        return poster_path;
+    }
+
+    public void setPosterPath(String posterPath) {
+        this.poster_path = posterPath;
+    }
 }
