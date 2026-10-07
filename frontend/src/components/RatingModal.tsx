@@ -121,18 +121,6 @@ export const RatingModal: React.FC<RatingModalProps> = ({
     }
   };
 
-  const handleStarMouseMove = (e: React.MouseEvent<HTMLButtonElement>, starVal: number) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isLeft = e.clientX - rect.left < rect.width / 2;
-    setHoverRating(isLeft ? starVal - 0.5 : starVal);
-  };
-
-  const handleStarClick = (e: React.MouseEvent<HTMLButtonElement>, starVal: number) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isLeft = e.clientX - rect.left < rect.width / 2;
-    setRating(isLeft ? starVal - 0.5 : starVal);
-  };
-
   const displayRating = hoverRating !== null ? hoverRating : rating;
 
   return (
@@ -201,18 +189,18 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               })}
             </div>
 
-            {/* Fine-tuning and quick rating selector */}
+            {/* Steppers -0.5 and +0.5 with rating display */}
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setRating((prev) => Math.max(0.5, Number((prev - 0.5).toFixed(1))))}
-                className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
                 title="Diminuir meia estrela (-0.5)"
               >
                 -0.5
               </button>
 
-              <div className="flex items-center gap-1.5 min-w-[5.5rem] justify-center px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              <div className="flex items-center gap-1.5 min-w-[5.5rem] justify-center px-4 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <span className="text-3xl font-black text-amber-400">
                   {displayRating > 0 ? displayRating.toFixed(1) : '-'}
                 </span>
@@ -222,40 +210,12 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               <button
                 type="button"
                 onClick={() => setRating((prev) => Math.min(10, Number((prev + 0.5).toFixed(1))))}
-                className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
                 title="Aumentar meia estrela (+0.5)"
               >
                 +0.5
               </button>
             </div>
-
-            {/* Quick chips presets */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-sm pt-1">
-              {[5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((val) => (
-                <button
-                  type="button"
-                  key={val}
-                  onClick={() => setRating(val)}
-                  className={`px-2 py-0.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                    rating === val
-                      ? 'bg-amber-400 text-zinc-950 font-black shadow-sm'
-                      : 'bg-zinc-900 border border-white/[0.06] text-zinc-400 hover:text-white hover:border-amber-500/30'
-                  }`}
-                >
-                  {val.toFixed(1)}
-                </button>
-              ))}
-            </div>
-
-            <input
-              type="range"
-              min="0.5"
-              max="10"
-              step="0.5"
-              value={rating || 0.5}
-              onChange={(e) => setRating(parseFloat(e.target.value))}
-              className="w-full max-w-xs accent-amber-400 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-            />
           </div>
 
           {/* Comment */}
