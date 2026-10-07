@@ -12,12 +12,41 @@ export const FavoritesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'movies' | 'series' | 'actors'>('movies');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(24);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'split' | 'unified'>('split');
+  const [favoriteMovies, setFavoriteMovies] = useState<TmdbMovie[]>(() => {
+    try {
+      const c = sessionStorage.getItem('lms_fav_cached_movies');
+      return c ? JSON.parse(c) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [favoriteSeries, setFavoriteSeries] = useState<TmdbSerie[]>(() => {
+    try {
+      const c = sessionStorage.getItem('lms_fav_cached_series');
+      return c ? JSON.parse(c) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [favoriteActors, setFavoriteActors] = useState<TmdbPerson[]>(() => {
+    try {
+      const c = sessionStorage.getItem('lms_fav_cached_actors');
+      return c ? JSON.parse(c) : [];
+    } catch {
+      return [];
+    }
+  });
 
-  const [favoriteMovies, setFavoriteMovies] = useState<TmdbMovie[]>([]);
-  const [favoriteSeries, setFavoriteSeries] = useState<TmdbSerie[]>([]);
-  const [favoriteActors, setFavoriteActors] = useState<TmdbPerson[]>([]);
+  const [loading, setLoading] = useState(() => {
+    try {
+      const m = sessionStorage.getItem('lms_fav_cached_movies');
+      const s = sessionStorage.getItem('lms_fav_cached_series');
+      return !(m || s);
+    } catch {
+      return true;
+    }
+  });
+  const [viewMode, setViewMode] = useState<'split' | 'unified'>('split');
 
   useEffect(() => {
     const saved = localStorage.getItem('lms_favoritos_view_mode');
@@ -37,7 +66,6 @@ export const FavoritesPage: React.FC = () => {
   }, [searchQuery, activeTab, viewMode]);
 
   const loadFavorites = async () => {
-    setLoading(true);
     try {
       const [moviesRes, seriesRes, actorsRes] = await Promise.all([
         favoriteApi.getUserMovies(),
@@ -111,9 +139,17 @@ export const FavoritesPage: React.FC = () => {
         })
         .filter(Boolean) as TmdbSerie[];
 
+      const validActors = loadedActors.filter(Boolean) as TmdbPerson[];
+
       setFavoriteMovies(loadedMovies);
       setFavoriteSeries(loadedSeries);
-      setFavoriteActors(loadedActors.filter(Boolean) as TmdbPerson[]);
+      setFavoriteActors(validActors);
+
+      try {
+        sessionStorage.setItem('lms_fav_cached_movies', JSON.stringify(loadedMovies));
+        sessionStorage.setItem('lms_fav_cached_series', JSON.stringify(loadedSeries));
+        sessionStorage.setItem('lms_fav_cached_actors', JSON.stringify(validActors));
+      } catch {}
     } catch {
       toast.error('Erro ao carregar favoritos');
     } finally {

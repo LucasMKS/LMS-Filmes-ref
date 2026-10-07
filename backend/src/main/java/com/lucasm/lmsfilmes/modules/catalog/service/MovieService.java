@@ -144,13 +144,43 @@ public class MovieService {
         return fetchPaginatedData(path);
     }
 
+    @Cacheable(value = "movieBasicDetails", key = "#movieId")
+    public TmdbDTO getMovieBasicDetails(String movieId) {
+        try {
+            String path = withLanguage("/movie/" + movieId);
+            String body = webClient.get()
+                    .uri(path)
+                    .retrieve()
+                    .onStatus(status -> status.value() == 404, response ->
+                            Mono.error(new ResourceNotFoundException("Filme não encontrado: " + movieId)))
+                    .onStatus(HttpStatusCode::isError, response ->
+                            response.bodyToMono(String.class)
+                                    .map(err -> new TmdbApiException(
+                                            "Erro ao buscar detalhes do filme: status " + response.statusCode().value())))
+                    .bodyToMono(String.class)
+                    .retryWhen(Retry.backoff(3, Duration.ofMillis(250))
+                            .filter(this::isRetryable))
+                    .block();
+
+            return objectMapper.readValue(body, TmdbDTO.class);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (WebClientResponseException e) {
+            logger.error("Erro HTTP ao buscar detalhes básicos do filme {}: {}", movieId, e.getMessage());
+            throw new TmdbApiException("Erro ao buscar detalhes do filme: " + e.getMessage(), e);
+        } catch (Exception e) {
+            logger.error("Erro ao buscar detalhes básicos do filme {}: {}", movieId, e.getMessage(), e);
+            throw new TmdbApiException("Erro ao buscar detalhes do filme: " + e.getMessage(), e);
+        }
+    }
+
     public Map<String, TmdbDTO> getMoviesBatch(List<String> movieIds) {
         if (movieIds == null || movieIds.isEmpty()) return Map.of();
         List<String> safeIds = movieIds.size() > 250 ? movieIds.subList(0, 250) : movieIds;
 
         MovieService self = selfProvider.getObject();
         return Flux.fromIterable(safeIds)
-                .flatMap(id -> Mono.fromCallable(() -> self.getMovieDetails(id, false))
+                .flatMap(id -> Mono.fromCallable(() -> self.getMovieBasicDetails(id))
                         .subscribeOn(Schedulers.boundedElastic())
                         .map(dto -> Map.entry(id, dto))
                         .onErrorResume(e -> {

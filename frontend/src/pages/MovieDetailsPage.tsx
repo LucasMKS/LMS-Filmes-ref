@@ -335,89 +335,116 @@ export const MovieDetailsPage: React.FC = () => {
                 {movie.overview || 'Nenhuma sinopse disponível em português.'}
               </p>
             </div>
-
-            {/* User Review Display if already rated */}
-            {userRating != null && (
-              <div className="p-4 bg-gradient-to-r from-amber-500/10 via-zinc-900/60 to-zinc-900/40 border border-amber-500/30 rounded-2xl max-w-3xl mt-4 shadow-lg">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 text-amber-400 font-extrabold text-xs rounded-lg border border-amber-500/40">
-                      <Star className="w-3.5 h-3.5 fill-amber-400" /> Minha Avaliação: {Number(userRating).toFixed(1)}/10
-                    </span>
-                    {userRewatch > 0 && (
-                      <span className="text-[11px] font-semibold text-zinc-400 px-2 py-0.5 rounded-md bg-zinc-800/80 border border-zinc-700/50">
-                        Reassistido {userRewatch}x
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setIsRatingModalOpen(true)}
-                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-400 font-medium transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    Editar
-                  </button>
-                </div>
-                {userComment ? (
-                  <div className="flex items-start gap-2.5 pt-1">
-                    <MessageSquare className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block mb-0.5">Meu Comentário</span>
-                      <p className="text-sm text-zinc-200 leading-relaxed italic">"{userComment}"</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-zinc-400 italic">Sem comentário escrito. Clique em editar para adicionar uma resenha.</p>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Streaming / Watch Providers */}
-        {watchProviders && (
-          <div className="mt-12 p-6 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
-            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-              <Tv className="w-5 h-5 text-amber-400" />
-              Onde Assistir no Brasil
-            </h3>
-            <div className="flex flex-wrap gap-8">
-              {watchProviders.flatrate && (
+        {/* Avaliação do Usuário e Onde Assistir (Mesma Grade) */}
+        {(userRating != null || (watchProviders && (watchProviders.flatrate || watchProviders.rent || watchProviders.buy))) && (
+          <div className={`mt-8 grid gap-6 ${userRating != null && watchProviders && (watchProviders.flatrate || watchProviders.rent || watchProviders.buy) ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+            {/* User Review Display if already rated */}
+            {userRating != null && (
+              <div className="p-6 bg-gradient-to-br from-amber-500/10 via-zinc-900/80 to-zinc-900/60 border border-amber-500/30 rounded-2xl shadow-xl flex flex-col justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Streaming</p>
-                  <div className="flex flex-wrap gap-3">
-                    {watchProviders.flatrate.map((provider) => (
-                      <div key={provider.provider_id} className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
-                        <img
-                          src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
-                          alt={provider.provider_name}
-                          className="w-6 h-6 rounded-lg"
-                        />
-                        <span className="text-xs font-medium text-zinc-200">{provider.provider_name}</span>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/5">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 font-extrabold text-sm rounded-lg border border-amber-500/40">
+                        <Star className="w-4 h-4 fill-amber-400" /> Minha Avaliação: {Number(userRating).toFixed(1)}/10
+                      </span>
+                      {userRewatch > 0 && (
+                        <span className="text-xs font-semibold text-zinc-400 px-2.5 py-1 rounded-md bg-zinc-800/80 border border-zinc-700/50">
+                          Reassistido {userRewatch}x
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setIsRatingModalOpen(true)}
+                      className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-400 font-medium transition-colors cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Editar
+                    </button>
                   </div>
+                  {userComment ? (
+                    <div className="flex items-start gap-3 pt-1">
+                      <MessageSquare className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block mb-1">Meu Comentário</span>
+                        <p className="text-sm text-zinc-200 leading-relaxed italic">"{userComment}"</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-400 italic">Sem comentário escrito. Clique em editar para adicionar uma resenha.</p>
+                  )}
                 </div>
-              )}
+              </div>
+            )}
 
-              {watchProviders.rent && (
+            {/* Streaming / Watch Providers */}
+            {watchProviders && (watchProviders.flatrate || watchProviders.rent || watchProviders.buy) && (
+              <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex flex-col justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Aluguel</p>
-                  <div className="flex flex-wrap gap-3">
-                    {watchProviders.rent.map((provider) => (
-                      <div key={provider.provider_id} className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
-                        <img
-                          src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
-                          alt={provider.provider_name}
-                          className="w-6 h-6 rounded-lg"
-                        />
-                        <span className="text-xs font-medium text-zinc-200">{provider.provider_name}</span>
+                  <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <Tv className="w-5 h-5 text-amber-400" />
+                    Onde Assistir no Brasil
+                  </h3>
+                  <div className="flex flex-wrap gap-6">
+                    {watchProviders.flatrate && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Streaming</p>
+                        <div className="flex flex-wrap gap-2.5">
+                          {watchProviders.flatrate.map((provider) => (
+                            <div key={provider.provider_id} className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800 shadow-sm">
+                              <img
+                                src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                                alt={provider.provider_name}
+                                className="w-6 h-6 rounded-lg"
+                              />
+                              <span className="text-xs font-medium text-zinc-200">{provider.provider_name}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    {watchProviders.rent && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Aluguel</p>
+                        <div className="flex flex-wrap gap-2.5">
+                          {watchProviders.rent.map((provider) => (
+                            <div key={provider.provider_id} className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800 shadow-sm">
+                              <img
+                                src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                                alt={provider.provider_name}
+                                className="w-6 h-6 rounded-lg"
+                              />
+                              <span className="text-xs font-medium text-zinc-200">{provider.provider_name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {watchProviders.buy && (
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Comprar</p>
+                        <div className="flex flex-wrap gap-2.5">
+                          {watchProviders.buy.map((provider) => (
+                            <div key={provider.provider_id} className="flex items-center gap-2 bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800 shadow-sm">
+                              <img
+                                src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                                alt={provider.provider_name}
+                                className="w-6 h-6 rounded-lg"
+                              />
+                              <span className="text-xs font-medium text-zinc-200">{provider.provider_name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 

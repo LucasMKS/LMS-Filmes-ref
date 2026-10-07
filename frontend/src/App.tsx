@@ -16,7 +16,6 @@ import { FavoritesPage } from './pages/FavoritesPage';
 import { RatingsPage } from './pages/RatingsPage';
 import { ListsPage } from './pages/ListsPage';
 import { ListDetailsPage } from './pages/ListDetailsPage';
-import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
@@ -155,14 +154,6 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <ListDetailsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/estatisticas"
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
                   </ProtectedRoute>
                 }
               />

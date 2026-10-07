@@ -11,11 +11,34 @@ export const WatchlistPage: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'serie'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(24);
-  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'split' | 'unified'>('unified');
 
-  const [movieItems, setMovieItems] = useState<(WatchlistMovie & { details?: TmdbMovie })[]>([]);
-  const [serieItems, setSerieItems] = useState<(WatchlistSerie & { details?: TmdbSerie })[]>([]);
+  const [movieItems, setMovieItems] = useState<(WatchlistMovie & { details?: TmdbMovie })[]>(() => {
+    try {
+      const cached = sessionStorage.getItem('lms_wl_cached_movies');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [serieItems, setSerieItems] = useState<(WatchlistSerie & { details?: TmdbSerie })[]>(() => {
+    try {
+      const cached = sessionStorage.getItem('lms_wl_cached_series');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [loading, setLoading] = useState(() => {
+    try {
+      const hasMovies = sessionStorage.getItem('lms_wl_cached_movies');
+      const hasSeries = sessionStorage.getItem('lms_wl_cached_series');
+      return !(hasMovies || hasSeries);
+    } catch {
+      return true;
+    }
+  });
 
   // Roleta Aleatória
   const [randomItem, setRandomItem] = useState<{
@@ -45,7 +68,6 @@ export const WatchlistPage: React.FC = () => {
   }, [searchQuery, filterType, viewMode]);
 
   const loadWatchlist = async () => {
-    setLoading(true);
     try {
       const [moviesRes, seriesRes] = await Promise.all([
         watchlistApi.getUserMovies(),
@@ -79,6 +101,13 @@ export const WatchlistPage: React.FC = () => {
 
       setMovieItems(loadedMovies);
       setSerieItems(loadedSeries);
+
+      try {
+        sessionStorage.setItem('lms_wl_cached_movies', JSON.stringify(loadedMovies));
+        sessionStorage.setItem('lms_wl_cached_series', JSON.stringify(loadedSeries));
+      } catch {
+        // quota exceeded or private mode
+      }
     } catch {
       toast.error('Erro ao carregar watchlist');
     } finally {
@@ -89,7 +118,13 @@ export const WatchlistPage: React.FC = () => {
   const handleRemoveMovie = async (movieId: number) => {
     try {
       await watchlistApi.removeMovie(movieId);
-      setMovieItems((prev) => prev.filter((m) => m.movieId !== movieId));
+      setMovieItems((prev) => {
+        const next = prev.filter((m) => m.movieId !== movieId);
+        try {
+          sessionStorage.setItem('lms_wl_cached_movies', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
       toast.info('Removido da watchlist');
     } catch {
       toast.error('Erro ao remover');
@@ -99,7 +134,13 @@ export const WatchlistPage: React.FC = () => {
   const handleRemoveSerie = async (serieId: number) => {
     try {
       await watchlistApi.removeSerie(serieId);
-      setSerieItems((prev) => prev.filter((s) => s.serieId !== serieId));
+      setSerieItems((prev) => {
+        const next = prev.filter((s) => s.serieId !== serieId);
+        try {
+          sessionStorage.setItem('lms_wl_cached_series', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
       toast.info('Removido da watchlist');
     } catch {
       toast.error('Erro ao remover');

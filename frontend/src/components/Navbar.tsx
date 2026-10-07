@@ -8,7 +8,6 @@ import {
   Heart, 
   Star, 
   ListFilter, 
-  BarChart2, 
   Search, 
   LogOut, 
   Menu, 
@@ -76,7 +75,6 @@ export const Navbar: React.FC = () => {
     { name: 'Watchlist', href: '/watchlist', icon: Bookmark, description: 'Títulos para assistir' },
     { name: 'Minhas Listas', href: '/listas', icon: ListFilter, description: 'Coleções personalizadas' },
     { name: 'Atores', href: '/atores', icon: Users, description: 'Catálogo de atores' },
-    { name: 'Estatísticas', href: '/estatisticas', icon: BarChart2, description: 'Métricas e histórico' },
   ];
 
   const isActive = (path: string) => {

@@ -141,13 +141,43 @@ public class SerieService {
         }
     }
 
+    @Cacheable(value = "serieBasicDetails", key = "#serieId")
+    public SeriesDTO getSerieBasicDetails(String serieId) {
+        try {
+            String path = withLanguage("/tv/" + serieId);
+            String body = webClient.get()
+                    .uri(path)
+                    .retrieve()
+                    .onStatus(status -> status.value() == 404, response ->
+                            Mono.error(new ResourceNotFoundException("Série não encontrada: " + serieId)))
+                    .onStatus(HttpStatusCode::isError, response ->
+                            response.bodyToMono(String.class)
+                                    .map(err -> new TmdbApiException(
+                                            "Erro ao buscar detalhes da série: status " + response.statusCode().value())))
+                    .bodyToMono(String.class)
+                    .retryWhen(Retry.backoff(3, Duration.ofMillis(250))
+                            .filter(this::isRetryable))
+                    .block();
+
+            return objectMapper.readValue(body, SeriesDTO.class);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (WebClientResponseException e) {
+            logger.error("Erro HTTP ao buscar detalhes básicos da série {}: {}", serieId, e.getMessage());
+            throw new TmdbApiException("Erro ao buscar detalhes da série: " + e.getMessage(), e);
+        } catch (Exception e) {
+            logger.error("Erro ao buscar detalhes básicos da série {}: {}", serieId, e.getMessage(), e);
+            throw new TmdbApiException("Erro ao buscar detalhes da série: " + e.getMessage(), e);
+        }
+    }
+
     public Map<String, SeriesDTO> getSeriesBatch(List<String> serieIds) {
         if (serieIds == null || serieIds.isEmpty()) return Map.of();
         List<String> safeIds = serieIds.size() > 250 ? serieIds.subList(0, 250) : serieIds;
 
         SerieService self = selfProvider.getObject();
         return Flux.fromIterable(safeIds)
-                .flatMap(id -> Mono.fromCallable(() -> self.getSeriesDetails(id, false))
+                .flatMap(id -> Mono.fromCallable(() -> self.getSerieBasicDetails(id))
                         .subscribeOn(Schedulers.boundedElastic())
                         .map(dto -> Map.entry(id, dto))
                         .onErrorResume(e -> {

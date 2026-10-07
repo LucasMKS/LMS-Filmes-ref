@@ -64,6 +64,7 @@ public class RedisConfig implements CachingConfigurer {
         cacheConfigurations.put("moviesUpcoming", defaultConfig.entryTtl(Duration.ofHours(24)));
         cacheConfigurations.put("moviesSearch", defaultConfig.entryTtl(Duration.ofHours(6)));
         cacheConfigurations.put("movieDetails", defaultConfig.entryTtl(Duration.ofHours(48)));
+        cacheConfigurations.put("movieBasicDetails", defaultConfig.entryTtl(Duration.ofHours(48)));
         cacheConfigurations.put("movieRecommendations", defaultConfig.entryTtl(Duration.ofHours(24)));
         cacheConfigurations.put("seriesPopular", defaultConfig.entryTtl(Duration.ofHours(24)));
         cacheConfigurations.put("seriesAiringToday", defaultConfig.entryTtl(Duration.ofHours(12)));
@@ -72,6 +73,7 @@ public class RedisConfig implements CachingConfigurer {
         cacheConfigurations.put("seriesSearch", defaultConfig.entryTtl(Duration.ofHours(6)));
         cacheConfigurations.put("seriesRecommendations", defaultConfig.entryTtl(Duration.ofHours(24)));
         cacheConfigurations.put("serieDetails", defaultConfig.entryTtl(Duration.ofHours(48)));
+        cacheConfigurations.put("serieBasicDetails", defaultConfig.entryTtl(Duration.ofHours(48)));
         cacheConfigurations.put("seasonDetails", defaultConfig.entryTtl(Duration.ofHours(48)));
         cacheConfigurations.put("episodeDetails", defaultConfig.entryTtl(Duration.ofHours(48)));
         cacheConfigurations.put("actorsPopular", defaultConfig.entryTtl(Duration.ofHours(48)));
