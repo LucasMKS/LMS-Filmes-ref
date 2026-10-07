@@ -5,6 +5,7 @@ import { TmdbPersonDetail, TmdbPersonCredits } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { AddActorToListModal } from '../components/AddActorToListModal';
 import { useAuthStore } from '../store/useAuthStore';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { 
   ArrowLeft, 
   Heart, 
@@ -21,6 +22,7 @@ export const ActorDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const actorId = Number(id);
   const { isAuthenticated } = useAuthStore();
+  const { movieRatings, serieRatings } = useUserRatingsStore();
 
   const [actor, setActor] = useState<TmdbPersonDetail | null>(null);
   const [credits, setCredits] = useState<TmdbPersonCredits | null>(null);
@@ -243,6 +245,7 @@ export const ActorDetailsPage: React.FC = () => {
                 voteAverage={item.vote_average}
                 releaseDate={item.release_date || item.first_air_date}
                 type={item.media_type === 'tv' ? 'serie' : 'movie'}
+                userRating={item.media_type === 'tv' ? serieRatings[item.id] || null : movieRatings[item.id] || null}
               />
             ))}
           </div>

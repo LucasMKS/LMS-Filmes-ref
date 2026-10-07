@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { watchlistApi, movieApi, serieApi } from '../services/api';
 import { WatchlistMovie, WatchlistSerie, WatchlistStatus, TmdbMovie, TmdbSerie } from '../types';
 import { MediaCard } from '../components/MediaCard';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { Bookmark, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const WatchlistPage: React.FC = () => {
+  const { movieRatings, serieRatings } = useUserRatingsStore();
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'serie'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -319,6 +321,7 @@ export const WatchlistPage: React.FC = () => {
                         releaseDate={item.details?.release_date}
                         type="movie"
                         watchlistStatusInitial={item.status}
+                        userRating={movieRatings[item.movieId] || null}
                         onWatchlistChange={(_, status) => {
                           if (!status) handleRemoveMovie(item.movieId);
                         }}
@@ -369,6 +372,7 @@ export const WatchlistPage: React.FC = () => {
                         releaseDate={item.details?.first_air_date}
                         type="serie"
                         watchlistStatusInitial={item.status}
+                        userRating={serieRatings[item.serieId] || null}
                         onWatchlistChange={(_, status) => {
                           if (!status) handleRemoveSerie(item.serieId);
                         }}
@@ -406,6 +410,7 @@ export const WatchlistPage: React.FC = () => {
                         releaseDate={item.details?.release_date}
                         type="movie"
                         watchlistStatusInitial={item.status}
+                        userRating={movieRatings[item.movieId] || null}
                         onWatchlistChange={(_, status) => {
                           if (!status) handleRemoveMovie(item.movieId);
                         }}
@@ -434,6 +439,7 @@ export const WatchlistPage: React.FC = () => {
                         releaseDate={item.details?.first_air_date}
                         type="serie"
                         watchlistStatusInitial={item.status}
+                        userRating={serieRatings[item.serieId] || null}
                         onWatchlistChange={(_, status) => {
                           if (!status) handleRemoveSerie(item.serieId);
                         }}

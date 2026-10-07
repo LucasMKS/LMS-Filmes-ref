@@ -5,11 +5,13 @@ import { TmdbMovie } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { MediaGridSkeleton } from '../components/MediaGridSkeleton';
 import { Pagination } from '../components/Pagination';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { Film, Flame, PlayCircle, Trophy, Clock, Search } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
+  const { movieRatings } = useUserRatingsStore();
 
   const [movies, setMovies] = useState<TmdbMovie[]>([]);
   const [featured, setFeatured] = useState<TmdbMovie | null>(null);
@@ -212,6 +214,7 @@ export const HomePage: React.FC = () => {
                 voteAverage={movie.vote_average}
                 releaseDate={movie.release_date}
                 type="movie"
+                userRating={movieRatings[movie.id] || null}
               />
             ))}
           </div>

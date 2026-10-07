@@ -22,6 +22,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 import { useAuthStore } from './store/useAuthStore';
+import { useUserRatingsStore } from './store/useUserRatingsStore';
 import { Film } from 'lucide-react';
 
 const queryClient = new QueryClient({
@@ -72,11 +73,18 @@ const Footer: React.FC = () => {
 };
 
 export const App: React.FC = () => {
-  const { initialize } = useAuthStore();
+  const { initialize, isAuthenticated } = useAuthStore();
+  const { fetchRatings } = useUserRatingsStore();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchRatings();
+    }
+  }, [isAuthenticated, fetchRatings]);
 
   return (
     <QueryClientProvider client={queryClient}>

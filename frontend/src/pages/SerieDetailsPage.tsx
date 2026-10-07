@@ -11,6 +11,7 @@ import { MediaCard } from '../components/MediaCard';
 import { RatingModal } from '../components/RatingModal';
 import { AddToListModal } from '../components/AddToListModal';
 import { useAuthStore } from '../store/useAuthStore';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { 
   Star, 
   Heart, 
@@ -31,6 +32,7 @@ export const SerieDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const serieId = Number(id);
   const { isAuthenticated } = useAuthStore();
+  const { serieRatings } = useUserRatingsStore();
 
   const [serie, setSerie] = useState<TmdbSerieDetail | null>(null);
   const [recommendations, setRecommendations] = useState<TmdbSerie[]>([]);
@@ -398,6 +400,7 @@ export const SerieDetailsPage: React.FC = () => {
                   voteAverage={rec.vote_average}
                   releaseDate={rec.first_air_date}
                   type="serie"
+                  userRating={serieRatings[rec.id] || null}
                 />
               ))}
             </div>

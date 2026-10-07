@@ -11,6 +11,7 @@ import { MediaCard } from '../components/MediaCard';
 import { RatingModal } from '../components/RatingModal';
 import { AddToListModal } from '../components/AddToListModal';
 import { useAuthStore } from '../store/useAuthStore';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { 
   Star, 
   Heart, 
@@ -34,6 +35,7 @@ export const MovieDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const movieId = Number(id);
   const { isAuthenticated } = useAuthStore();
+  const { movieRatings } = useUserRatingsStore();
 
   const [movie, setMovie] = useState<TmdbMovieDetail | null>(null);
   const [recommendations, setRecommendations] = useState<TmdbMovie[]>([]);
@@ -461,6 +463,7 @@ export const MovieDetailsPage: React.FC = () => {
                   voteAverage={rec.vote_average}
                   releaseDate={rec.release_date}
                   type="movie"
+                  userRating={movieRatings[rec.id] || null}
                 />
               ))}
             </div>

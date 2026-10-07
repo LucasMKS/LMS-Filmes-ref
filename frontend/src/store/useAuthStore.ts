@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import Cookies from 'js-cookie';
 import { User } from '../types';
 import { authApi } from '../services/api';
+import { useUserRatingsStore } from './useUserRatingsStore';
 
 interface AuthState {
   user: User | null;
@@ -62,6 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_data');
     set({ token: null, user: null, isAuthenticated: false });
+    useUserRatingsStore.getState().clearRatings();
   },
 
   updateUser: (fields) =>

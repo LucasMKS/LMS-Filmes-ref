@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Star, MessageSquare, RotateCcw, Trash2 } from 'lucide-react';
 import { ratingApi } from '../services/api';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { toast } from 'sonner';
 
 interface RatingModalProps {
@@ -59,9 +60,19 @@ export const RatingModal: React.FC<RatingModalProps> = ({
           comment: comment.trim() || undefined,
           rewatchCount,
         });
+        useUserRatingsStore.getState().setMovieRating(mediaId, {
+          rating,
+          comment: comment.trim() || undefined,
+          rewatchCount,
+        });
       } else {
         await ratingApi.rateSerie({
           serieId: mediaId,
+          rating,
+          comment: comment.trim() || undefined,
+          rewatchCount,
+        });
+        useUserRatingsStore.getState().setSerieRating(mediaId, {
           rating,
           comment: comment.trim() || undefined,
           rewatchCount,
@@ -84,8 +95,10 @@ export const RatingModal: React.FC<RatingModalProps> = ({
     try {
       if (mediaType === 'movie') {
         await ratingApi.deleteMovieRating(mediaId);
+        useUserRatingsStore.getState().removeMovieRating(mediaId);
       } else {
         await ratingApi.deleteSerieRating(mediaId);
+        useUserRatingsStore.getState().removeSerieRating(mediaId);
       }
       toast.info('Avaliação removida');
       onSuccess?.();

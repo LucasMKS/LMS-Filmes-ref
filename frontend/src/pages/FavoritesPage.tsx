@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { favoriteApi, movieApi, serieApi, actorApi } from '../services/api';
 import { TmdbMovie, TmdbSerie, TmdbPerson } from '../types';
 import { MediaCard } from '../components/MediaCard';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { Heart, Film, Tv, Users, Trash2, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const FavoritesPage: React.FC = () => {
+  const { movieRatings, serieRatings } = useUserRatingsStore();
   const [activeTab, setActiveTab] = useState<'movies' | 'series' | 'actors'>('movies');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(24);
@@ -258,6 +260,7 @@ export const FavoritesPage: React.FC = () => {
                       releaseDate={movie.release_date}
                       type="movie"
                       isFavoriteInitial={true}
+                      userRating={movieRatings[movie.id] || null}
                       onFavoriteChange={(id, isFav) => {
                         if (!isFav) setFavoriteMovies((prev) => prev.filter((m) => m.id !== id));
                       }}
@@ -297,6 +300,7 @@ export const FavoritesPage: React.FC = () => {
                       releaseDate={serie.first_air_date}
                       type="serie"
                       isFavoriteInitial={true}
+                      userRating={serieRatings[serie.id] || null}
                       onFavoriteChange={(id, isFav) => {
                         if (!isFav) setFavoriteSeries((prev) => prev.filter((s) => s.id !== id));
                       }}
@@ -329,6 +333,7 @@ export const FavoritesPage: React.FC = () => {
                     releaseDate={movie.release_date}
                     type="movie"
                     isFavoriteInitial={true}
+                    userRating={movieRatings[movie.id] || null}
                     onFavoriteChange={(id, isFav) => {
                       if (!isFav) setFavoriteMovies((prev) => prev.filter((m) => m.id !== id));
                     }}
@@ -349,6 +354,7 @@ export const FavoritesPage: React.FC = () => {
                     releaseDate={serie.first_air_date}
                     type="serie"
                     isFavoriteInitial={true}
+                    userRating={serieRatings[serie.id] || null}
                     onFavoriteChange={(id, isFav) => {
                       if (!isFav) setFavoriteSeries((prev) => prev.filter((s) => s.id !== id));
                     }}

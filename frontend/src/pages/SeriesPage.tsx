@@ -5,11 +5,13 @@ import { TmdbSerie } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { MediaGridSkeleton } from '../components/MediaGridSkeleton';
 import { Pagination } from '../components/Pagination';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { Tv, Flame, Radio, Award, Calendar, Search } from 'lucide-react';
 
 export const SeriesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
+  const { serieRatings } = useUserRatingsStore();
 
   const [series, setSeries] = useState<TmdbSerie[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,6 +168,7 @@ export const SeriesPage: React.FC = () => {
                 voteAverage={serie.vote_average}
                 releaseDate={serie.first_air_date}
                 type="serie"
+                userRating={serieRatings[serie.id] || null}
               />
             ))}
           </div>

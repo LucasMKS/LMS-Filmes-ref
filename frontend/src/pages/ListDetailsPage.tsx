@@ -3,6 +3,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { customListApi, actorListApi, movieApi, serieApi, actorApi } from '../services/api';
 import { CustomList, ActorList, TmdbMovie, TmdbSerie, TmdbPerson } from '../types';
 import { MediaCard } from '../components/MediaCard';
+import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { 
   ArrowLeft, 
   Trash2, 
@@ -25,6 +26,7 @@ export const ListDetailsPage: React.FC = () => {
   const location = useLocation();
   const listId = Number(id);
   const isActorList = location.pathname.includes('/atores/');
+  const { movieRatings, serieRatings } = useUserRatingsStore();
 
   const [mediaList, setMediaList] = useState<CustomList | null>(null);
   const [actorList, setActorList] = useState<ActorList | null>(null);
@@ -560,6 +562,7 @@ export const ListDetailsPage: React.FC = () => {
                     voteAverage={item.voteAverage}
                     releaseDate={item.date}
                     type={item.type}
+                    userRating={item.type === 'movie' ? movieRatings[item.id] || null : serieRatings[item.id] || null}
                   />
                   <button
                     onClick={() => handleRemoveMediaItem(item.id, item.type)}
