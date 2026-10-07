@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { movieApi } from '../services/api';
 import { TmdbMovie } from '../types';
 import { MediaCard } from '../components/MediaCard';
@@ -121,12 +121,12 @@ export const HomePage: React.FC = () => {
                 {featured.overview}
               </p>
               <div className="flex items-center gap-4 pt-2">
-                <a
-                  href={`/filmes/${featured.id}`}
+                <Link
+                  to={`/filmes/${featured.id}`}
                   className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-sm rounded-xl transition-all shadow-lg shadow-amber-400/20"
                 >
                   Ver Detalhes
-                </a>
+                </Link>
               </div>
             </div>
           </div>

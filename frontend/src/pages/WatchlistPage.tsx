@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { watchlistApi, movieApi, serieApi } from '../services/api';
 import { WatchlistMovie, WatchlistSerie, WatchlistStatus, TmdbMovie, TmdbSerie } from '../types';
 import { MediaCard } from '../components/MediaCard';
@@ -547,14 +548,14 @@ export const WatchlistPage: React.FC = () => {
               >
                 Fechar
               </button>
-              <a
-                href={randomItem.type === 'movie' ? `/filmes/${randomItem.id}` : `/series/${randomItem.id}`}
+              <Link
+                to={randomItem.type === 'movie' ? `/filmes/${randomItem.id}` : `/series/${randomItem.id}`}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 ${
                   isSpinning ? 'pointer-events-none opacity-50' : ''
                 }`}
               >
                 Ver Detalhes
-              </a>
+              </Link>
             </div>
           </div>
         </div>

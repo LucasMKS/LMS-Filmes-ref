@@ -27,7 +27,7 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
-      '^/(auth|movies|series|rate|favorite|watchlist|watched|custom-lists|stats|notifications|lms-filmes|lmsfilmes|lms-rating|lmsrating|lms-favorite|lmsfavorite)': {
+      '^/(auth|movies|rate|favorite|watched|custom-lists|stats|notifications|lms-filmes|lmsfilmes|lms-rating|lmsrating|lms-favorite|lmsfavorite)': {
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
