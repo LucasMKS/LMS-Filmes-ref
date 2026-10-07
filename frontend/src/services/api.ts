@@ -229,10 +229,28 @@ export const customListApi = {
   createList: async (payload: { name: string; description?: string; isPublic?: boolean }) =>
     apiClient.post<CustomList>('/favorite/custom-lists', payload),
   deleteList: async (id: number) => apiClient.delete<SimpleApiResponse>(`/favorite/custom-lists/${id}`),
-  addItem: async (listId: number, payload: { mediaId: number; mediaType: 'MOVIE' | 'SERIE' }) =>
-    apiClient.post<CustomList>(`/favorite/custom-lists/${listId}/items`, payload),
-  removeItem: async (listId: number, mediaId: number, mediaType: 'MOVIE' | 'SERIE') =>
-    apiClient.delete<SimpleApiResponse>(`/favorite/custom-lists/${listId}/items?mediaId=${mediaId}&mediaType=${mediaType}`),
+  addItem: async (listId: number, payload: {
+    id: string | number;
+    type: 'movie' | 'serie' | 'MOVIE' | 'SERIE';
+    title?: string;
+    posterPath?: string | null;
+    backdropPath?: string | null;
+    voteAverage?: number;
+    releaseYear?: string;
+  }) => {
+    const formatted = {
+      id: String(payload.id),
+      type: payload.type.toLowerCase(),
+      title: payload.title,
+      posterPath: payload.posterPath,
+      backdropPath: payload.backdropPath,
+      voteAverage: payload.voteAverage,
+      releaseYear: payload.releaseYear,
+    };
+    return apiClient.post<CustomList>(`/favorite/custom-lists/${listId}/items`, formatted);
+  },
+  removeItem: async (listId: number, mediaId: number | string, mediaType: 'movie' | 'serie' | 'MOVIE' | 'SERIE') =>
+    apiClient.delete<SimpleApiResponse>(`/favorite/custom-lists/${listId}/items?mediaId=${encodeURIComponent(mediaId)}&mediaType=${encodeURIComponent(mediaType.toLowerCase())}`),
 };
 export const customListsApi = customListApi;
 

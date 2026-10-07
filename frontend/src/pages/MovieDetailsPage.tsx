@@ -507,6 +507,10 @@ export const MovieDetailsPage: React.FC = () => {
         mediaId={movieId}
         mediaType="movie"
         mediaTitle={movie.title}
+        posterPath={movie.poster_path}
+        backdropPath={movie.backdrop_path}
+        voteAverage={movie.vote_average}
+        releaseYear={movie.release_date ? new Date(movie.release_date).getFullYear().toString() : undefined}
       />
     </div>
   );

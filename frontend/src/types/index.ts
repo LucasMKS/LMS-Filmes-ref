@@ -309,18 +309,25 @@ export interface FavoriteActorItem {
 
 export interface CustomListItem {
   id: number;
-  mediaId: number;
-  mediaType: 'MOVIE' | 'SERIE';
-  addedAt: string;
+  mediaId: string | number;
+  mediaType?: 'movie' | 'serie' | 'MOVIE' | 'SERIE';
+  type?: 'movie' | 'serie' | 'MOVIE' | 'SERIE';
+  title?: string;
+  posterPath?: string | null;
+  backdropPath?: string | null;
+  voteAverage?: number;
+  releaseYear?: string;
+  addedAt?: string;
 }
 
 export interface CustomList {
   id: number;
-  userId: number;
+  userId?: number;
   name: string;
   description?: string;
   isPublic?: boolean;
   createdAt: string;
+  updatedAt?: string;
   items: CustomListItem[];
 }
 

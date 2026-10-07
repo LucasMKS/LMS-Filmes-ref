@@ -423,6 +423,10 @@ export const SerieDetailsPage: React.FC = () => {
         mediaId={serieId}
         mediaType="serie"
         mediaTitle={serie.name}
+        posterPath={serie.poster_path}
+        backdropPath={serie.backdrop_path}
+        voteAverage={serie.vote_average}
+        releaseYear={serie.first_air_date ? new Date(serie.first_air_date).getFullYear().toString() : undefined}
       />
     </div>
   );

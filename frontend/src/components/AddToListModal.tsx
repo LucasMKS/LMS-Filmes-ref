@@ -10,6 +10,10 @@ interface AddToListModalProps {
   mediaId: number;
   mediaType: 'movie' | 'serie';
   mediaTitle: string;
+  posterPath?: string | null;
+  backdropPath?: string | null;
+  voteAverage?: number;
+  releaseYear?: string;
 }
 
 export const AddToListModal: React.FC<AddToListModalProps> = ({
@@ -18,6 +22,10 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({
   mediaId,
   mediaType,
   mediaTitle,
+  posterPath,
+  backdropPath,
+  voteAverage,
+  releaseYear,
 }) => {
   const [lists, setLists] = useState<CustomList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,8 +78,13 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({
     setAddingToListId(listId);
     try {
       await customListApi.addItem(listId, {
-        mediaId,
-        mediaType: mediaType.toUpperCase() as 'MOVIE' | 'SERIE',
+        id: mediaId,
+        type: mediaType,
+        title: mediaTitle,
+        posterPath,
+        backdropPath,
+        voteAverage,
+        releaseYear,
       });
       toast.success(`"${mediaTitle}" adicionado à lista!`);
       onClose();
