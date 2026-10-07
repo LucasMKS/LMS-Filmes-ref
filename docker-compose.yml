@@ -49,7 +49,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: lucasmks/lms-filmes-ref:backend
+    image: ${DOCKER_USERNAME:-lucasmks}/lms-filmes-ref:backend
     container_name: lms-filmes-backend
     restart: unless-stopped
     networks:
@@ -98,7 +98,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: lucasmks/lms-filmes-ref:frontend
+    image: ${DOCKER_USERNAME:-lucasmks}/lms-filmes-ref:frontend
     container_name: lms-filmes-frontend
     restart: unless-stopped
     networks:

@@ -1,0 +1,114 @@
+name: CI/CD LMS Filmes Ref (Docker Hub + VPS)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # ==========================================
+  # CONSTRUIR E ENVIAR PARA O DOCKER HUB
+  # ==========================================
+  build-and-push:
+    name: Build & Push Imagens Docker
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # DETECTAR ALTERAÇÕES (FRONTEND OU BACKEND)
+      - name: Detectar pastas alteradas
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+
+      - name: Login no Docker Hub
+        if: steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # FRONTEND
+      - name: Build & Push Frontend
+        if: steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/lms-filmes-ref:frontend
+
+      # BACKEND
+      - name: Build & Push Backend
+        if: steps.filter.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/lms-filmes-ref:backend
+
+  # ==========================================
+  # ATUALIZAR O SERVIDOR (VPS / HOSTINGER)
+  # ==========================================
+  deploy:
+    name: Deploy na VPS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: needs.build-and-push.outputs.frontend == 'true' || needs.build-and-push.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Validar Secrets de SSH
+        run: |
+          if [ -z "${{ secrets.DROPLET_IP }}" ]; then echo "ERRO: DROPLET_IP não está configurado nas Secrets do repositório!"; exit 1; fi
+          if [ -z "${{ secrets.DROPLET_USER }}" ]; then echo "ERRO: DROPLET_USER não está configurado nas Secrets do repositório!"; exit 1; fi
+          if [ -z "${{ secrets.DROPLET_SSH_KEY }}" ]; then echo "ERRO: DROPLET_SSH_KEY não está configurado nas Secrets do repositório!"; exit 1; fi
+
+      - name: Executar comandos no servidor via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          timeout: 60s
+          command_timeout: 10m
+          script: |
+            if [ -d "/root/lms-filmes-ref" ]; then
+              cd /root/lms-filmes-ref
+            elif [ -d "/root/LMS-Filmes-ref" ]; then
+              cd /root/LMS-Filmes-ref
+            elif [ -d "/root/lms-filmes" ]; then
+              cd /root/lms-filmes
+            elif [ -d "/root/lmsfilmes" ]; then
+              cd /root/lmsfilmes
+            else
+              echo "Diretório do projeto não encontrado no servidor!"
+              exit 1
+            fi
+
+            echo "Diretório de execução: $(pwd)"
+
+            # Garantir existência da rede externa proxy caso necessária
+            docker network inspect proxy-network >/dev/null 2>&1 || docker network create proxy-network || true
+
+            echo "Baixando as novas imagens do Docker Hub..."
+            docker compose pull backend || true
+            docker compose pull frontend || true
+
+            echo "Reiniciando os containers..."
+            docker compose up -d
+
+            echo "Limpando imagens antigas sem uso..."
+            docker image prune -f
+
+            echo "Deploy concluído com sucesso no LMS Filmes Ref!"
