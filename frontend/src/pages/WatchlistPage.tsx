@@ -3,7 +3,7 @@ import { watchlistApi, movieApi, serieApi } from '../services/api';
 import { WatchlistMovie, WatchlistSerie, WatchlistStatus, TmdbMovie, TmdbSerie } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { useUserRatingsStore } from '../store/useUserRatingsStore';
-import { Bookmark, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
+import { Bookmark, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid, Dices } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const WatchlistPage: React.FC = () => {
@@ -17,6 +17,16 @@ export const WatchlistPage: React.FC = () => {
 
   const [movieItems, setMovieItems] = useState<(WatchlistMovie & { details?: TmdbMovie })[]>([]);
   const [serieItems, setSerieItems] = useState<(WatchlistSerie & { details?: TmdbSerie })[]>([]);
+
+  // Roleta Aleatória
+  const [randomItem, setRandomItem] = useState<{
+    id: number;
+    title: string;
+    poster: string | null;
+    type: 'movie' | 'serie';
+  } | null>(null);
+  const [isRandomDialogOpen, setIsRandomDialogOpen] = useState(false);
+  const [isSpinning, setIsSpinning] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('lms_watchlist_view_mode');
@@ -123,6 +133,48 @@ export const WatchlistPage: React.FC = () => {
     } catch {
       toast.error('Erro ao remover');
     }
+  };
+
+  const handleRandomPick = () => {
+    const listToPick: { id: number; title: string; poster: string | null; type: 'movie' | 'serie' }[] = [];
+    if (filterType === 'all' || filterType === 'movie') {
+      filteredMovies.forEach((m) => {
+        listToPick.push({
+          id: m.movieId,
+          title: m.details?.title || `Filme #${m.movieId}`,
+          poster: m.details?.poster_path || null,
+          type: 'movie',
+        });
+      });
+    }
+    if (filterType === 'all' || filterType === 'serie') {
+      filteredSeries.forEach((s) => {
+        listToPick.push({
+          id: s.serieId,
+          title: s.details?.name || `Série #${s.serieId}`,
+          poster: s.details?.poster_path || null,
+          type: 'serie',
+        });
+      });
+    }
+
+    if (listToPick.length === 0) {
+      toast.error('Nenhum título disponível nos filtros atuais para sortear!');
+      return;
+    }
+
+    setIsRandomDialogOpen(true);
+    setIsSpinning(true);
+    let counter = 0;
+    const interval = setInterval(() => {
+      const randomIndex = Math.floor(Math.random() * listToPick.length);
+      setRandomItem(listToPick[randomIndex]);
+      counter++;
+      if (counter > 15) {
+        clearInterval(interval);
+        setIsSpinning(false);
+      }
+    }, 100);
   };
 
   // Filtragem com suporte a texto de busca
@@ -244,10 +296,21 @@ export const WatchlistPage: React.FC = () => {
               </select>
             </div>
 
-            {/* Seletor de Visualização (Abas/Unificado vs Lado a Lado) */}
-            <div className="hidden lg:flex items-center gap-1 bg-[#14141c] p-1 rounded-xl border border-white/[0.06]">
+            {/* Botão da Roleta e Seletor de Visualização */}
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => handleViewModeChange('split')}
+                type="button"
+                onClick={handleRandomPick}
+                title="Sortear o que assistir da Watchlist"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 shadow-md cursor-pointer"
+              >
+                <Dices className="w-4 h-4" />
+                <span>Roleta</span>
+              </button>
+
+              <div className="hidden lg:flex items-center gap-1 bg-[#14141c] p-1 rounded-xl border border-white/[0.06]">
+                <button
+                  onClick={() => handleViewModeChange('split')}
                 title="Lado a Lado (Filmes na Esquerda | Séries na Direita)"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   viewMode === 'split'
@@ -474,6 +537,66 @@ export const WatchlistPage: React.FC = () => {
             )}
           </>
         )}
+      </div>
+
+      {/* Modal da Roleta da Watchlist */}
+      {isRandomDialogOpen && randomItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#14141c] border border-white/[0.1] p-6 sm:p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl transition-all duration-300">
+            <h2 className="mb-2 text-xl sm:text-2xl font-black text-white">
+              {isSpinning ? 'Girando a Roleta...' : 'A Roleta Escolheu!'}
+            </h2>
+            <p className="mb-6 text-xs sm:text-sm text-zinc-400">
+              {isSpinning ? 'Buscando nos seus títulos da Watchlist...' : 'Você vai assistir:'}
+            </p>
+
+            <div className="relative mx-auto mb-5 w-40 h-60 sm:w-44 sm:h-64 rounded-2xl overflow-hidden border-4 shadow-xl transition-all duration-200 bg-zinc-950 flex items-center justify-center">
+              {randomItem.poster ? (
+                <img
+                  src={`https://image.tmdb.org/t/p/w500${randomItem.poster}`}
+                  alt={randomItem.title}
+                  className={`w-full h-full object-cover transition-all duration-200 ${
+                    isSpinning ? 'scale-90 opacity-60 blur-[3px]' : 'scale-100 opacity-100 blur-0'
+                  }`}
+                />
+              ) : (
+                <div className="text-zinc-600 font-bold text-xs p-4">Sem pôster</div>
+              )}
+            </div>
+
+            <div className="mb-6">
+              <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-1.5 uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {randomItem.type === 'movie' ? 'Filme' : 'Série'}
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-white line-clamp-2">
+                {randomItem.title}
+              </h3>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRandomDialogOpen(false);
+                  setRandomItem(null);
+                }}
+                disabled={isSpinning}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer"
+              >
+                Fechar
+              </button>
+              <a
+                href={randomItem.type === 'movie' ? `/filmes/${randomItem.id}` : `/series/${randomItem.id}`}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 ${
+                  isSpinning ? 'pointer-events-none opacity-50' : ''
+                }`}
+              >
+                Ver Detalhes
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

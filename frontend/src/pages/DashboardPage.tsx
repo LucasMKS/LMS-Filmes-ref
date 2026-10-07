@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { dashboardApi, mediaStatsApi } from '../services/api';
-import { DashboardStats, MediaBalance } from '../types';
+import { dashboardApi, mediaStatsApi, ratingApi, customListApi, watchlistApi } from '../services/api';
+import { DashboardStats, MediaBalance, RatedMovie, RatedSerie } from '../types';
 import { 
   BarChart2, 
   Film, 
@@ -10,13 +10,19 @@ import {
   Star, 
   Layers, 
   TrendingUp, 
-  Award 
+  Award,
+  ListVideo,
+  FolderHeart,
+  Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [balance, setBalance] = useState<MediaBalance | null>(null);
+  const [watchlistCount, setWatchlistCount] = useState(0);
+  const [customListsCount, setCustomListsCount] = useState(0);
+  const [customListItemsCount, setCustomListItemsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,9 +32,12 @@ export const DashboardPage: React.FC = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsRes, balRes] = await Promise.allSettled([
+      const [statsRes, balRes, watchMRes, watchSRes, listsRes] = await Promise.allSettled([
         dashboardApi.getStats(),
         mediaStatsApi.getBalance(),
+        watchlistApi.getUserMovies(),
+        watchlistApi.getUserSeries(),
+        customListApi.getUserLists(),
       ]);
 
       if (statsRes.status === 'fulfilled') {
@@ -36,6 +45,16 @@ export const DashboardPage: React.FC = () => {
       }
       if (balRes.status === 'fulfilled') {
         setBalance(balRes.value.data);
+      }
+      const mCount = watchMRes.status === 'fulfilled' ? (watchMRes.value.data || []).length : 0;
+      const sCount = watchSRes.status === 'fulfilled' ? (watchSRes.value.data || []).length : 0;
+      setWatchlistCount(mCount + sCount);
+
+      if (listsRes.status === 'fulfilled') {
+        const lists = listsRes.value.data || [];
+        setCustomListsCount(lists.length);
+        const totalItems = lists.reduce((acc: number, l: any) => acc + (l.items?.length || 0), 0);
+        setCustomListItemsCount(totalItems);
       }
     } catch {
       toast.error('Erro ao carregar estatísticas');
@@ -109,6 +128,64 @@ export const DashboardPage: React.FC = () => {
             <p className="text-[11px] text-zinc-500">
               ~{stats?.totalTimeWatchedDays ? stats.totalTimeWatchedDays.toFixed(1) : '0'} dias de tela
             </p>
+          </div>
+        </div>
+
+        {/* Secondary Row: Watchlist, Listas e Perfil Persona */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Em Fila (Watchlist)</span>
+              <p className="text-2xl font-black text-white mt-1">{watchlistCount}</p>
+              <p className="text-[11px] text-zinc-500">Títulos salvos para assistir</p>
+            </div>
+            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <ListVideo className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Listas Criadas</span>
+              <p className="text-2xl font-black text-white mt-1">{customListsCount}</p>
+              <p className="text-[11px] text-zinc-500">{customListItemsCount} mídias organizadas</p>
+            </div>
+            <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <FolderHeart className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-950/40 to-amber-950/20 border border-purple-500/30 flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 shrink-0">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Perfil de Espectador
+              </span>
+              <h4 className="text-sm font-bold text-white mt-0.5">
+                {(() => {
+                  const total = (stats?.totalMoviesRated || 0) + (stats?.totalSeriesRated || 0);
+                  if (total === 0) return 'Iniciante Curioso 🎬';
+                  const avg = ((stats?.averageMovieRating || 0) + (stats?.averageSerieRating || 0)) / 2;
+                  if (avg >= 8.5) return 'Espectador Entusiasta 🌟';
+                  if (avg >= 7.0) return 'Cinéfilo Equilibrado 🎬';
+                  if (avg >= 5.0) return 'Crítico Exigente 🧐';
+                  return 'Espectador Implacável ⚡';
+                })()}
+              </h4>
+              <p className="text-[11px] text-zinc-400">
+                {(() => {
+                  const total = (stats?.totalMoviesRated || 0) + (stats?.totalSeriesRated || 0);
+                  if (total === 0) return 'Avalie títulos para desbloquear seu perfil.';
+                  const avg = ((stats?.averageMovieRating || 0) + (stats?.averageSerieRating || 0)) / 2;
+                  if (avg >= 8.5) return 'Você vê o melhor em quase tudo que assiste.';
+                  if (avg >= 7.0) return 'Aprecia boas produções com critério e bom gosto.';
+                  if (avg >= 5.0) return 'Suas notas são bastante criteriosas.';
+                  return 'Muito difícil de agradar! Apenas obras-primas passam.';
+                })()}
+              </p>
+            </div>
           </div>
         </div>
 
