@@ -116,7 +116,7 @@ export const ListDetailsPage: React.FC = () => {
         const actors = await Promise.all(
           res.data.items.map(async (item) => {
             try {
-              const a = await actorApi.getDetails(item.actorId);
+              const a = await actorApi.getDetails(Number(item.actorId));
               return a.data;
             } catch {
               return null;

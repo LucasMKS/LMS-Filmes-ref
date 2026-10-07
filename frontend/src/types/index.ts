@@ -333,17 +333,21 @@ export interface CustomList {
 
 export interface ActorListItem {
   id: number;
-  actorId: number;
+  actorId: number | string;
+  name?: string;
+  profilePath?: string | null;
+  department?: string;
   addedAt: string;
 }
 
 export interface ActorList {
   id: number;
-  userId: number;
+  userId?: number;
   name: string;
   description?: string;
   isPublic?: boolean;
   createdAt: string;
+  updatedAt?: string;
   items: ActorListItem[];
 }
 

@@ -306,6 +306,19 @@ export const RatingsPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Botão Carregar Mais em Lado a Lado */}
+            {(filteredMovies.length > visibleLimit || filteredSeries.length > visibleLimit) && (
+              <div className="flex justify-center mt-12">
+                <button
+                  onClick={() => setVisibleLimit((prev) => prev + 24)}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#14141c] border border-white/[0.08] hover:border-yellow-400 text-yellow-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                  Carregar mais avaliações ({Math.max(0, filteredMovies.length - visibleLimit) + Math.max(0, filteredSeries.length - visibleLimit)} restantes)
+                </button>
+              </div>
+            )}
           </div>
         ) : totalCount === 0 ? (
           <div className="text-center py-20 bg-[#14141c]/40 rounded-2xl border border-white/[0.06]">

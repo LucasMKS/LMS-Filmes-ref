@@ -228,6 +228,8 @@ export const customListApi = {
   getList: async (id: number) => apiClient.get<CustomList>(`/favorite/custom-lists/${id}`),
   createList: async (payload: { name: string; description?: string; isPublic?: boolean }) =>
     apiClient.post<CustomList>('/favorite/custom-lists', payload),
+  updateList: async (id: number, payload: { name: string; description?: string }) =>
+    apiClient.put<CustomList>(`/favorite/custom-lists/${id}`, payload),
   deleteList: async (id: number) => apiClient.delete<SimpleApiResponse>(`/favorite/custom-lists/${id}`),
   addItem: async (listId: number, payload: {
     id: string | number;
@@ -260,10 +262,21 @@ export const actorListApi = {
   getList: async (id: number) => apiClient.get<ActorList>(`/favorite/actor-lists/${id}`),
   createList: async (payload: { name: string; description?: string; isPublic?: boolean }) =>
     apiClient.post<ActorList>('/favorite/actor-lists', payload),
+  updateList: async (id: number, payload: { name: string; description?: string }) =>
+    apiClient.put<ActorList>(`/favorite/actor-lists/${id}`, payload),
   deleteList: async (id: number) => apiClient.delete<SimpleApiResponse>(`/favorite/actor-lists/${id}`),
-  addActor: async (listId: number, actorId: number) =>
-    apiClient.post<ActorList>(`/favorite/actor-lists/${listId}/items`, { actorId }),
-  removeActor: async (listId: number, actorId: number) =>
+  addActor: async (
+    listId: number,
+    actorId: number,
+    details?: { name?: string; profilePath?: string | null; department?: string }
+  ) =>
+    apiClient.post<ActorList>(`/favorite/actor-lists/${listId}/items`, {
+      actorId: String(actorId),
+      name: details?.name,
+      profilePath: details?.profilePath,
+      department: details?.department,
+    }),
+  removeActor: async (listId: number, actorId: number | string) =>
     apiClient.delete<SimpleApiResponse>(`/favorite/actor-lists/${listId}/items/${actorId}`),
 };
 export const actorListsApi = actorListApi;
