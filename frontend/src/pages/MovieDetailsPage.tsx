@@ -281,14 +281,14 @@ export const MovieDetailsPage: React.FC = () => {
               {/* Rate button */}
               <button
                 onClick={() => setIsRatingModalOpen(true)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl border transition-all shadow-sm cursor-pointer ${
+                className={`flex items-center gap-2 px-5 py-2.5 text-sm rounded-xl transition-all shadow-md cursor-pointer ${
                   userRating
-                    ? 'bg-amber-500/25 border-amber-500/60 text-amber-300 shadow-amber-500/20 hover:bg-amber-500/35'
-                    : 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-amber-500/10 hover:bg-amber-500/25 hover:border-amber-400'
+                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 font-bold shadow-amber-500/15 hover:scale-[1.02]'
+                    : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-zinc-950 font-black shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98]'
                 }`}
               >
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                {userRating ? `Minha Nota: ${Number(userRating).toFixed(1)}/10` : 'Avaliar Filme'}
+                <Star className={`w-4 h-4 ${userRating ? 'fill-amber-400 text-amber-400' : 'fill-zinc-950 text-zinc-950'}`} />
+                <span>{userRating ? `Minha Nota: ${Number(userRating).toFixed(1)}/10` : 'Avaliar Filme'}</span>
               </button>
 
               {/* Favorite button */}

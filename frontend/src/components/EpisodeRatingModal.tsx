@@ -87,32 +87,71 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5 pt-4">
-          <div className="flex flex-col items-center justify-center gap-2">
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starVal) => (
-                <button
-                  type="button"
-                  key={starVal}
-                  onMouseEnter={() => setHoverRating(starVal)}
-                  onMouseLeave={() => setHoverRating(null)}
-                  onClick={() => setRating(starVal)}
-                  className="p-1 text-zinc-600 hover:text-amber-400 transition-colors"
-                >
-                  <Star
-                    className={`w-5 h-5 ${
-                      starVal <= displayRating
-                        ? 'text-amber-400 fill-amber-400'
-                        : 'text-zinc-700'
-                    }`}
-                  />
-                </button>
-              ))}
+          <div className="flex flex-col items-center justify-center gap-3">
+            <div className="flex items-center gap-0.5 sm:gap-1 p-2 rounded-2xl bg-zinc-900/60 border border-white/[0.05]">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starVal) => {
+                const isFull = displayRating >= starVal;
+                const isHalf = !isFull && displayRating >= starVal - 0.5;
+
+                return (
+                  <div
+                    key={starVal}
+                    className="relative w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center group"
+                  >
+                    <Star className="w-5 h-5 sm:w-6 sm:h-6 text-zinc-700 pointer-events-none" />
+
+                    {(isFull || isHalf) && (
+                      <div
+                        className="absolute inset-0 overflow-hidden pointer-events-none flex items-center"
+                        style={{ width: isFull ? '100%' : '50%' }}
+                      >
+                        <Star className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 fill-amber-400 shrink-0" />
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setRating(starVal - 0.5)}
+                      onMouseEnter={() => setHoverRating(starVal - 0.5)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      className="absolute inset-y-0 left-0 w-1/2 z-10 cursor-pointer"
+                      title={`Nota ${starVal - 0.5}`}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setRating(starVal)}
+                      onMouseEnter={() => setHoverRating(starVal)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      className="absolute inset-y-0 right-0 w-1/2 z-10 cursor-pointer"
+                      title={`Nota ${starVal}`}
+                    />
+                  </div>
+                );
+              })}
             </div>
+
             <div className="flex items-center gap-2">
-              <span className="text-xl font-black text-amber-400">
-                {displayRating > 0 ? displayRating.toFixed(1) : '-'}
-              </span>
-              <span className="text-xs text-zinc-500">/ 10</span>
+              <button
+                type="button"
+                onClick={() => setRating((prev) => Math.max(0.5, Number((prev - 0.5).toFixed(1))))}
+                className="px-2 py-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-bold hover:bg-zinc-800"
+              >
+                -0.5
+              </button>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <span className="text-2xl font-black text-amber-400">
+                  {displayRating > 0 ? displayRating.toFixed(1) : '-'}
+                </span>
+                <span className="text-xs text-zinc-500">/ 10</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRating((prev) => Math.min(10, Number((prev + 0.5).toFixed(1))))}
+                className="px-2 py-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-bold hover:bg-zinc-800"
+              >
+                +0.5
+              </button>
             </div>
           </div>
 

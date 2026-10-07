@@ -16,9 +16,27 @@ interface WatchlistState {
   clearWatchlist: () => void;
 }
 
+const getStoredIds = (key: string): Set<number> => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return new Set<number>();
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return new Set<number>(parsed.map(Number).filter(Boolean));
+    }
+  } catch {}
+  return new Set<number>();
+};
+
+const saveStoredIds = (key: string, setIds: Set<number>) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(Array.from(setIds)));
+  } catch {}
+};
+
 export const useWatchlistStore = create<WatchlistState>((set, get) => ({
-  watchlistMovieIds: new Set<number>(),
-  watchlistSerieIds: new Set<number>(),
+  watchlistMovieIds: getStoredIds('lms_watchlist_movies'),
+  watchlistSerieIds: getStoredIds('lms_watchlist_series'),
   isLoaded: false,
   isLoading: false,
 
@@ -44,6 +62,9 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
         const id = Number(s.serieId || s.id);
         if (id) serieIds.add(id);
       });
+
+      saveStoredIds('lms_watchlist_movies', movieIds);
+      saveStoredIds('lms_watchlist_series', serieIds);
 
       set({
         watchlistMovieIds: movieIds,
@@ -106,6 +127,7 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
       const next = new Set(state.watchlistMovieIds);
       if (inList) next.add(Number(id));
       else next.delete(Number(id));
+      saveStoredIds('lms_watchlist_movies', next);
       return { watchlistMovieIds: next };
     }),
 
@@ -114,28 +136,42 @@ export const useWatchlistStore = create<WatchlistState>((set, get) => ({
       const next = new Set(state.watchlistSerieIds);
       if (inList) next.add(Number(id));
       else next.delete(Number(id));
+      saveStoredIds('lms_watchlist_series', next);
       return { watchlistSerieIds: next };
     }),
 
-  removeMovieWatchlist: (id: number) =>
+  removeMovieWatchlist: (id: number) => {
+    const numId = Number(id);
+    watchlistApi.removeMovie(numId).catch(() => {});
     set((state) => {
       const next = new Set(state.watchlistMovieIds);
-      next.delete(Number(id));
+      next.delete(numId);
+      saveStoredIds('lms_watchlist_movies', next);
       return { watchlistMovieIds: next };
-    }),
+    });
+  },
 
-  removeSerieWatchlist: (id: number) =>
+  removeSerieWatchlist: (id: number) => {
+    const numId = Number(id);
+    watchlistApi.removeSerie(numId).catch(() => {});
     set((state) => {
       const next = new Set(state.watchlistSerieIds);
-      next.delete(Number(id));
+      next.delete(numId);
+      saveStoredIds('lms_watchlist_series', next);
       return { watchlistSerieIds: next };
-    }),
+    });
+  },
 
-  clearWatchlist: () =>
+  clearWatchlist: () => {
+    try {
+      localStorage.removeItem('lms_watchlist_movies');
+      localStorage.removeItem('lms_watchlist_series');
+    } catch {}
     set({
       watchlistMovieIds: new Set<number>(),
       watchlistSerieIds: new Set<number>(),
       isLoaded: false,
       isLoading: false,
-    }),
+    });
+  },
 }));

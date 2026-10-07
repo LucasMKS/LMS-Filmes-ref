@@ -46,21 +46,21 @@ public class SerieController {
         return ResponseEntity.ok(serieService.searchSeries(query, page));
     }
 
-    @GetMapping("/{serieId}")
+    @GetMapping("/batch")
+    public ResponseEntity<Map<String, SeriesDTO>> getBatch(@RequestParam List<String> ids) {
+        return ResponseEntity.ok(serieService.getSeriesBatch(ids));
+    }
+
+    @GetMapping("/{serieId:[0-9]+}")
     public ResponseEntity<SeriesDTO> getDetails(
             @PathVariable String serieId,
             @RequestParam(defaultValue = "false") boolean includeRecommendations) {
         return ResponseEntity.ok(serieService.getSeriesDetails(serieId, includeRecommendations));
     }
 
-    @GetMapping("/{serieId}/recommendations")
+    @GetMapping("/{serieId:[0-9]+}/recommendations")
     public ResponseEntity<TmdbPageDTO<SeriesDTO>> getRecommendations(@PathVariable String serieId) {
         return ResponseEntity.ok(serieService.getSeriesRecommendations(serieId));
-    }
-
-    @GetMapping("/batch")
-    public ResponseEntity<Map<String, SeriesDTO>> getBatch(@RequestParam List<String> ids) {
-        return ResponseEntity.ok(serieService.getSeriesBatch(ids));
     }
 
     @GetMapping("/{serieId}/season/{seasonNumber}")

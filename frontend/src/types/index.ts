@@ -139,6 +139,10 @@ export interface TmdbSerie {
   'watch/providers'?: {
     results: Record<string, TmdbProviderRegion>;
   };
+  created_by?: { id: number; name: string }[];
+  networks?: { id: number; name: string; logo_path?: string }[];
+  production_companies?: { id: number; name: string; logo_path?: string }[];
+  homepage?: string;
   recommendations?: TmdbPage<TmdbSerie>;
 }
 

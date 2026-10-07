@@ -40,16 +40,22 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   onQuickView,
 }) => {
   const { isAuthenticated } = useAuthStore();
-  const { isFavorite: checkFavoriteStore, toggleFavorite: toggleFavoriteStore } = useFavoritesStore();
-  const { inWatchlist: checkWatchlistStore, toggleWatchlist: toggleWatchlistStore } = useWatchlistStore();
+  const isFavInStore = useFavoritesStore((state) =>
+    type === 'movie'
+      ? state.favoriteMovieIds.has(Number(id))
+      : state.favoriteSerieIds.has(Number(id))
+  );
+  const toggleFavoriteStore = useFavoritesStore((state) => state.toggleFavorite);
 
-  const isFavorite = isFavoriteInitial !== undefined
-    ? isFavoriteInitial
-    : checkFavoriteStore(id, type);
+  const isInWatchlistStore = useWatchlistStore((state) =>
+    type === 'movie'
+      ? state.watchlistMovieIds.has(Number(id))
+      : state.watchlistSerieIds.has(Number(id))
+  );
+  const toggleWatchlistStore = useWatchlistStore((state) => state.toggleWatchlist);
 
-  const inWatchlist = watchlistStatusInitial !== undefined
-    ? Boolean(watchlistStatusInitial)
-    : checkWatchlistStore(id, type);
+  const isFavorite = isFavoriteInitial !== undefined ? isFavoriteInitial : isFavInStore;
+  const inWatchlist = watchlistStatusInitial !== undefined ? Boolean(watchlistStatusInitial) : isInWatchlistStore;
 
   const [loadingFav, setLoadingFav] = useState(false);
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);

@@ -152,67 +152,99 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-          {/* Star Rating Selector (Supports Half Stars) */}
+          {/* Star Rating Selector (Supports Full and Half Stars) */}
           <div className="flex flex-col items-center justify-center gap-3">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 p-2 rounded-2xl bg-zinc-900/60 border border-white/[0.05]">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starVal) => {
                 const isFull = displayRating >= starVal;
                 const isHalf = !isFull && displayRating >= starVal - 0.5;
 
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={starVal}
-                    onMouseMove={(e) => handleStarMouseMove(e, starVal)}
-                    onMouseLeave={() => setHoverRating(null)}
-                    onClick={(e) => handleStarClick(e, starVal)}
-                    className="relative p-1 transition-transform hover:scale-110 cursor-pointer"
-                    title={`${starVal} estrelas (clique à esquerda para ${starVal - 0.5})`}
+                    className="relative w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center group"
                   >
-                    <div className="relative w-6 h-6">
-                      {/* Background Empty Star */}
-                      <Star className="w-6 h-6 text-zinc-700" />
-                      {/* Foreground Filled Star (full or half) */}
-                      {(isFull || isHalf) && (
-                        <div
-                          className="absolute inset-0 overflow-hidden"
-                          style={{ width: isFull ? '100%' : '50%' }}
-                        >
-                          <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
-                        </div>
-                      )}
-                    </div>
-                  </button>
+                    {/* Background Empty Star */}
+                    <Star className="w-6 h-6 sm:w-7 sm:h-7 text-zinc-700 pointer-events-none transition-colors" />
+
+                    {/* Foreground Filled Star */}
+                    {(isFull || isHalf) && (
+                      <div
+                        className="absolute inset-0 overflow-hidden pointer-events-none flex items-center"
+                        style={{ width: isFull ? '100%' : '50%' }}
+                      >
+                        <Star className="w-6 h-6 sm:w-7 sm:h-7 text-amber-400 fill-amber-400 shrink-0" />
+                      </div>
+                    )}
+
+                    {/* Left Half Click Zone (-0.5) */}
+                    <button
+                      type="button"
+                      onClick={() => setRating(starVal - 0.5)}
+                      onMouseEnter={() => setHoverRating(starVal - 0.5)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      className="absolute inset-y-0 left-0 w-1/2 z-10 cursor-pointer"
+                      title={`Nota ${starVal - 0.5}`}
+                    />
+
+                    {/* Right Half Click Zone (full starVal) */}
+                    <button
+                      type="button"
+                      onClick={() => setRating(starVal)}
+                      onMouseEnter={() => setHoverRating(starVal)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      className="absolute inset-y-0 right-0 w-1/2 z-10 cursor-pointer"
+                      title={`Nota ${starVal}`}
+                    />
+                  </div>
                 );
               })}
             </div>
 
-            {/* Slider and Buttons for fine tuning */}
+            {/* Fine-tuning and quick rating selector */}
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setRating((prev) => Math.max(0.5, Number((prev - 0.5).toFixed(1))))}
-                className="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-xs text-zinc-300 font-semibold transition-colors"
+                className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
                 title="Diminuir meia estrela (-0.5)"
               >
                 -0.5
               </button>
 
-              <div className="flex items-center gap-1.5 min-w-[5rem] justify-center">
+              <div className="flex items-center gap-1.5 min-w-[5.5rem] justify-center px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <span className="text-3xl font-black text-amber-400">
                   {displayRating > 0 ? displayRating.toFixed(1) : '-'}
                 </span>
-                <span className="text-sm text-zinc-500 font-medium">/ 10</span>
+                <span className="text-xs text-zinc-500 font-semibold">/ 10</span>
               </div>
 
               <button
                 type="button"
                 onClick={() => setRating((prev) => Math.min(10, Number((prev + 0.5).toFixed(1))))}
-                className="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-xs text-zinc-300 font-semibold transition-colors"
+                className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
                 title="Aumentar meia estrela (+0.5)"
               >
                 +0.5
               </button>
+            </div>
+
+            {/* Quick chips presets */}
+            <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-sm pt-1">
+              {[5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10].map((val) => (
+                <button
+                  type="button"
+                  key={val}
+                  onClick={() => setRating(val)}
+                  className={`px-2 py-0.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    rating === val
+                      ? 'bg-amber-400 text-zinc-950 font-black shadow-sm'
+                      : 'bg-zinc-900 border border-white/[0.06] text-zinc-400 hover:text-white hover:border-amber-500/30'
+                  }`}
+                >
+                  {val.toFixed(1)}
+                </button>
+              ))}
             </div>
 
             <input

@@ -3,6 +3,8 @@ import Cookies from 'js-cookie';
 import { User } from '../types';
 import { authApi } from '../services/api';
 import { useUserRatingsStore } from './useUserRatingsStore';
+import { useFavoritesStore } from './useFavoritesStore';
+import { useWatchlistStore } from './useWatchlistStore';
 
 interface AuthState {
   user: User | null;
@@ -64,6 +66,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('user_data');
     set({ token: null, user: null, isAuthenticated: false });
     useUserRatingsStore.getState().clearRatings();
+    useFavoritesStore.getState().clearFavorites();
+    useWatchlistStore.getState().clearWatchlist();
   },
 
   updateUser: (fields) =>

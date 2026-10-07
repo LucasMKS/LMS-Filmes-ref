@@ -46,21 +46,21 @@ public class MovieController {
         return ResponseEntity.ok(movieService.searchMovies(query, page));
     }
 
-    @GetMapping("/{movieId}")
+    @GetMapping("/batch")
+    public ResponseEntity<Map<String, TmdbDTO>> getBatch(@RequestParam List<String> ids) {
+        return ResponseEntity.ok(movieService.getMoviesBatch(ids));
+    }
+
+    @GetMapping("/{movieId:[0-9]+}")
     public ResponseEntity<TmdbDTO> getDetails(
             @PathVariable String movieId,
             @RequestParam(defaultValue = "false") boolean includeRecommendations) {
         return ResponseEntity.ok(movieService.getMovieDetails(movieId, includeRecommendations));
     }
 
-    @GetMapping("/{movieId}/recommendations")
+    @GetMapping("/{movieId:[0-9]+}/recommendations")
     public ResponseEntity<TmdbPageDTO<TmdbDTO>> getRecommendations(@PathVariable String movieId) {
         return ResponseEntity.ok(movieService.getMovieRecommendations(movieId));
-    }
-
-    @GetMapping("/batch")
-    public ResponseEntity<Map<String, TmdbDTO>> getBatch(@RequestParam List<String> ids) {
-        return ResponseEntity.ok(movieService.getMoviesBatch(ids));
     }
 
     // Rotas de Pessoas / Atores (TMDB)

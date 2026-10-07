@@ -70,12 +70,45 @@ export const FavoritesPage: React.FC = () => {
       const moviesBatch = moviesBatchRes.data || {};
       const seriesBatch = seriesBatchRes.data || {};
 
-      const loadedMovies = movieIds
-        .map((id) => moviesBatch[String(id)])
+      const rawMovies = moviesRes.data || [];
+      const rawSeries = seriesRes.data || [];
+
+      const loadedMovies = rawMovies
+        .map((f: any) => {
+          const mid = f.movieId || f.id;
+          const b = moviesBatch[String(mid)];
+          if (b) return b;
+          if (f.title || mid) {
+            return {
+              id: Number(mid),
+              title: f.title || `Filme #${mid}`,
+              poster_path: f.poster_path || f.posterPath || null,
+              vote_average: 0,
+              overview: '',
+              release_date: '',
+            } as TmdbMovie;
+          }
+          return null;
+        })
         .filter(Boolean) as TmdbMovie[];
 
-      const loadedSeries = serieIds
-        .map((id) => seriesBatch[String(id)])
+      const loadedSeries = rawSeries
+        .map((s: any) => {
+          const sid = s.serieId || s.id;
+          const b = seriesBatch[String(sid)];
+          if (b) return b;
+          if (s.title || sid) {
+            return {
+              id: Number(sid),
+              name: s.title || `Série #${sid}`,
+              poster_path: s.poster_path || s.posterPath || null,
+              vote_average: 0,
+              overview: '',
+              first_air_date: '',
+            } as TmdbSerie;
+          }
+          return null;
+        })
         .filter(Boolean) as TmdbSerie[];
 
       setFavoriteMovies(loadedMovies);

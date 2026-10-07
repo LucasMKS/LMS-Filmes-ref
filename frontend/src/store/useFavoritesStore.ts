@@ -14,9 +14,27 @@ interface FavoritesState {
   clearFavorites: () => void;
 }
 
+const getStoredIds = (key: string): Set<number> => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return new Set<number>();
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return new Set<number>(parsed.map(Number).filter(Boolean));
+    }
+  } catch {}
+  return new Set<number>();
+};
+
+const saveStoredIds = (key: string, setIds: Set<number>) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(Array.from(setIds)));
+  } catch {}
+};
+
 export const useFavoritesStore = create<FavoritesState>((set, get) => ({
-  favoriteMovieIds: new Set<number>(),
-  favoriteSerieIds: new Set<number>(),
+  favoriteMovieIds: getStoredIds('lms_fav_movies'),
+  favoriteSerieIds: getStoredIds('lms_fav_series'),
   isLoaded: false,
   isLoading: false,
 
@@ -46,6 +64,9 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
           serieIds.add(id);
         }
       });
+
+      saveStoredIds('lms_fav_movies', movieIds);
+      saveStoredIds('lms_fav_series', serieIds);
 
       set({
         favoriteMovieIds: movieIds,
@@ -104,6 +125,7 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
       const next = new Set(state.favoriteMovieIds);
       if (isFav) next.add(Number(id));
       else next.delete(Number(id));
+      saveStoredIds('lms_fav_movies', next);
       return { favoriteMovieIds: next };
     }),
 
@@ -112,14 +134,20 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
       const next = new Set(state.favoriteSerieIds);
       if (isFav) next.add(Number(id));
       else next.delete(Number(id));
+      saveStoredIds('lms_fav_series', next);
       return { favoriteSerieIds: next };
     }),
 
-  clearFavorites: () =>
+  clearFavorites: () => {
+    try {
+      localStorage.removeItem('lms_fav_movies');
+      localStorage.removeItem('lms_fav_series');
+    } catch {}
     set({
       favoriteMovieIds: new Set<number>(),
       favoriteSerieIds: new Set<number>(),
       isLoaded: false,
       isLoading: false,
-    }),
+    });
+  },
 }));
