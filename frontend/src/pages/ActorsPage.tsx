@@ -28,10 +28,41 @@ import {
   Pencil,
   FolderHeart,
   ChevronDown,
+  ChevronUp,
   LayoutGrid,
   Layers,
+  Filter,
+  Tag,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Categorias TMDB para filtragem
+export interface CategoryFilterItem {
+  id: string;
+  label: string;
+  genreIds: number[];
+}
+
+export const MOVIE_CATEGORIES: CategoryFilterItem[] = [
+  { id: 'all', label: 'Todas as Categorias', genreIds: [] },
+  { id: 'scifi', label: 'Ficção Científica', genreIds: [878, 10765] },
+  { id: 'adventure', label: 'Aventura', genreIds: [12, 10759] },
+  { id: 'action', label: 'Ação', genreIds: [28, 10759] },
+  { id: 'comedy', label: 'Comédia', genreIds: [35] },
+  { id: 'drama', label: 'Drama', genreIds: [18] },
+  { id: 'thriller', label: 'Suspense', genreIds: [53, 9648] },
+  { id: 'horror', label: 'Terror', genreIds: [27] },
+  { id: 'animation', label: 'Animação', genreIds: [16] },
+  { id: 'fantasy', label: 'Fantasia', genreIds: [14, 10765] },
+  { id: 'romance', label: 'Romance', genreIds: [10749] },
+  { id: 'crime', label: 'Crime', genreIds: [80] },
+  { id: 'mystery', label: 'Mistério', genreIds: [9648] },
+  { id: 'documentary', label: 'Documentário', genreIds: [99] },
+  { id: 'family', label: 'Família', genreIds: [10751, 10762] },
+  { id: 'war', label: 'Guerra', genreIds: [10752, 10768] },
+  { id: 'western', label: 'Faroeste', genreIds: [37] },
+];
 
 // Sugestões populares iniciais para adicionar rapidamente
 const POPULAR_SUGGESTIONS: Array<{ id: number; name: string; department: string; profile_path: string | null }> = [
@@ -93,8 +124,14 @@ export const ActorsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RecommendationTab>('recommended');
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeOption>('all');
   const [titleFilter, setTitleFilter] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'by_actor'>('grid');
   const [visibleCount, setVisibleCount] = useState(18);
+
+  // Gestão Visual dos Atores da Lista Ativa (para quando houver muitos nomes)
+  const [isActorsExpanded, setIsActorsExpanded] = useState(false);
+  const [actorSearchInList, setActorSearchInList] = useState('');
+  const [actorDensityMode, setActorDensityMode] = useState<'normal' | 'compact'>('normal');
 
   // --- ESTADO PARA MODO EXPLORAR CATÁLOGO ---
   const catalogQuery = searchParams.get('q') || '';
@@ -400,12 +437,58 @@ export const ActorsPage: React.FC = () => {
     return aggregatedMedia.filter((m) => m.matchedActors.length >= 2).length;
   }, [aggregatedMedia]);
 
+  // Contagem dinâmica de títulos por categoria
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: aggregatedMedia.length };
+    MOVIE_CATEGORIES.forEach((cat) => {
+      if (cat.id === 'all') return;
+      counts[cat.id] = aggregatedMedia.filter(
+        (item) => item.genre_ids && item.genre_ids.some((gid) => cat.genreIds.includes(gid))
+      ).length;
+    });
+    return counts;
+  }, [aggregatedMedia]);
+
+  // Lista organizada de categorias (primeiro todas, depois as que possuem títulos na lista)
+  const availableCategories = useMemo(() => {
+    const withCount = MOVIE_CATEGORIES.filter((c) => c.id !== 'all' && (categoryCounts[c.id] || 0) > 0);
+    const withoutCount = MOVIE_CATEGORIES.filter((c) => c.id !== 'all' && (categoryCounts[c.id] || 0) === 0);
+    return [MOVIE_CATEGORIES[0], ...withCount, ...withoutCount];
+  }, [categoryCounts]);
+
+  // Atores visíveis na lista ativa (com suporte a busca e colapso para não crescer desordenadamente)
+  const displayedActors = useMemo(() => {
+    let list = selectedActors;
+    if (actorSearchInList.trim()) {
+      const q = actorSearchInList.toLowerCase().trim();
+      return list.filter((a) => a.name.toLowerCase().includes(q));
+    }
+    if (!isActorsExpanded && list.length > 8) {
+      return list.slice(0, 8);
+    }
+    return list;
+  }, [selectedActors, actorSearchInList, isActorsExpanded]);
+
+  // Reset de paginação ao alternar qualquer filtro
+  useEffect(() => {
+    setVisibleCount(18);
+  }, [activeTab, mediaTypeFilter, selectedCategory, titleFilter, selectedListId]);
+
   // Filtragem e Ordenação
   const filteredAndSortedMedia = useMemo(() => {
     let result = aggregatedMedia;
 
     if (mediaTypeFilter !== 'all') {
       result = result.filter((m) => m.media_type === mediaTypeFilter);
+    }
+
+    if (selectedCategory !== 'all') {
+      const cat = MOVIE_CATEGORIES.find((c) => c.id === selectedCategory);
+      if (cat && cat.genreIds.length > 0) {
+        result = result.filter(
+          (m) => m.genre_ids && m.genre_ids.some((gid) => cat.genreIds.includes(gid))
+        );
+      }
     }
 
     if (titleFilter.trim()) {
@@ -451,7 +534,7 @@ export const ActorsPage: React.FC = () => {
     }
 
     return copy;
-  }, [aggregatedMedia, mediaTypeFilter, titleFilter, activeTab]);
+  }, [aggregatedMedia, mediaTypeFilter, selectedCategory, titleFilter, activeTab]);
 
   const visibleMediaItems = useMemo(() => {
     return filteredAndSortedMedia.slice(0, visibleCount);
@@ -842,40 +925,122 @@ export const ActorsPage: React.FC = () => {
 
                 {/* CHIPS DOS ATORES DA LISTA ATIVA */}
                 {selectedActors.length > 0 && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-[#14141c] border border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-white/70 uppercase tracking-wider">
-                        Atores em {activeList?.name || 'Lista'} ({selectedActors.length})
-                      </span>
-                      <span className="text-xs text-white/40">
-                        {aggregatedMedia.length} títulos no total
-                        {crossoverCount > 0 && (
-                          <span className="text-purple-400 font-semibold ml-1.5">
-                            • {crossoverCount} em comum (crossover)
-                          </span>
+                  <div className="p-4 sm:p-5 rounded-2xl bg-[#14141c] border border-white/10 space-y-3.5">
+                    {/* Cabeçalho do Painel com Controles */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-white/80 uppercase tracking-wider flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-amber-400" />
+                          Atores na Lista
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          {selectedActors.length} {selectedActors.length === 1 ? 'ator' : 'atores'}
+                        </span>
+                        <span className="text-xs text-white/40 hidden md:inline">•</span>
+                        <span className="text-xs text-white/50 hidden md:inline">
+                          {aggregatedMedia.length} títulos gerados
+                          {crossoverCount > 0 && (
+                            <span className="text-purple-400 font-semibold ml-1.5">
+                              • {crossoverCount} crossover(s)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Controles de Busca e Visualização */}
+                      <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+                        {/* Mini busca dentro da lista se houver mais de 5 atores */}
+                        {selectedActors.length > 5 && (
+                          <div className="relative flex-1 sm:w-44">
+                            <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              placeholder="Filtrar ator..."
+                              value={actorSearchInList}
+                              onChange={(e) => setActorSearchInList(e.target.value)}
+                              className="w-full pl-8 pr-7 py-1 bg-black/40 border border-white/10 text-white text-xs rounded-xl focus:border-amber-500/50 focus:outline-none placeholder:text-white/30"
+                            />
+                            {actorSearchInList && (
+                              <button
+                                onClick={() => setActorSearchInList('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
                         )}
-                      </span>
+
+                        {/* Botão Alternar Densidade: Normal vs Compacto */}
+                        <button
+                          onClick={() => setActorDensityMode((prev) => (prev === 'normal' ? 'compact' : 'normal'))}
+                          title={actorDensityMode === 'normal' ? 'Alternar para visualização compacta' : 'Alternar para visualização normal'}
+                          className={`p-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                            actorDensityMode === 'compact'
+                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                              : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
+                          }`}
+                        >
+                          <SlidersHorizontal className="w-3.5 h-3.5" />
+                          <span className="text-[11px] hidden sm:inline">
+                            {actorDensityMode === 'compact' ? 'Compacto' : 'Normal'}
+                          </span>
+                        </button>
+
+                        {/* Botão Expandir / Recolher se houver mais de 8 atores e não estiver pesquisando */}
+                        {selectedActors.length > 8 && !actorSearchInList.trim() && (
+                          <button
+                            onClick={() => setIsActorsExpanded((prev) => !prev)}
+                            className="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{isActorsExpanded ? 'Recolher' : `Ver todos (${selectedActors.length})`}</span>
+                            {isActorsExpanded ? (
+                              <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5 text-amber-400" />
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2.5">
-                      {selectedActors.map((actor) => {
+                    {/* Container de Chips com max-height protegido */}
+                    <div
+                      className={`flex flex-wrap gap-2 transition-all ${
+                        isActorsExpanded
+                          ? 'max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/20'
+                          : ''
+                      }`}
+                    >
+                      {displayedActors.map((actor) => {
                         const avatarUrl = actor.profile_path
                           ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
                           : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=185';
                         const isLoading = loadingCreditsMap[actor.id];
+                        const isCompact = actorDensityMode === 'compact';
 
                         return (
                           <div
                             key={actor.id}
-                            className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors"
+                            className={`flex items-center rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all group ${
+                              isCompact ? 'gap-1.5 pl-1 pr-2 py-0.5' : 'gap-2 pl-1.5 pr-2.5 py-1.5'
+                            }`}
                           >
-                            <Link to={`/atores/${actor.id}`} className="w-6 h-6 rounded-lg overflow-hidden shrink-0">
+                            <Link
+                              to={`/atores/${actor.id}`}
+                              className={`rounded-lg overflow-hidden shrink-0 ${
+                                isCompact ? 'w-4 h-4' : 'w-6 h-6'
+                              }`}
+                            >
                               <img src={avatarUrl} alt={actor.name} className="w-full h-full object-cover" />
                             </Link>
 
                             <Link
                               to={`/atores/${actor.id}`}
-                              className="text-xs font-semibold text-white/90 hover:text-amber-400 transition-colors"
+                              className={`font-semibold text-white/90 hover:text-amber-400 transition-colors truncate max-w-[150px] ${
+                                isCompact ? 'text-[11px]' : 'text-xs'
+                              }`}
+                              title={actor.name}
                             >
                               {actor.name}
                             </Link>
@@ -885,22 +1050,40 @@ export const ActorsPage: React.FC = () => {
                             ) : (
                               <button
                                 onClick={() => handleRemoveActor(actor.id)}
-                                className="text-white/40 hover:text-red-400 p-0.5 rounded transition-colors ml-0.5 cursor-pointer"
+                                className="text-white/30 hover:text-red-400 p-0.5 rounded transition-colors ml-0.5 cursor-pointer opacity-80 group-hover:opacity-100"
                                 title="Remover ator desta lista"
                               >
-                                <X className="w-3.5 h-3.5" />
+                                <X className="w-3 h-3" />
                               </button>
                             )}
                           </div>
                         );
                       })}
+
+                      {/* Botão pill rápido para expandir quando estiver colapsado */}
+                      {!isActorsExpanded && !actorSearchInList.trim() && selectedActors.length > 8 && (
+                        <button
+                          onClick={() => setIsActorsExpanded(true)}
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>+{selectedActors.length - 8} outros (Expandir)</span>
+                        </button>
+                      )}
+
+                      {/* Caso de busca sem resultados */}
+                      {actorSearchInList.trim() && displayedActors.length === 0 && (
+                        <div className="py-2 text-xs text-white/40 italic">
+                          Nenhum ator correspondente a "{actorSearchInList}" nesta lista.
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* FILTROS E ABAS DE RECOMENDAÇÃO */}
                 {selectedActors.length > 0 ? (
-                  <div className="space-y-6 pt-2">
+                  <div className="space-y-4 pt-2">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                       {/* Abas */}
                       <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#14141c] border border-white/10 overflow-x-auto max-w-full scrollbar-none">
@@ -1033,16 +1216,78 @@ export const ActorsPage: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* BARRA DE FILTRO POR CATEGORIA (GÊNEROS) */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none">
+                      <span className="text-xs text-white/40 font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
+                        <Tag className="w-3.5 h-3.5 text-amber-400" /> Categorias:
+                      </span>
+
+                      {availableCategories.map((cat) => {
+                        const isSelected = selectedCategory === cat.id;
+                        const count = categoryCounts[cat.id] ?? 0;
+
+                        if (cat.id !== 'all' && count === 0 && !isSelected) {
+                          return null;
+                        }
+
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategory(cat.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer border ${
+                              isSelected
+                                ? 'bg-amber-500 text-black border-amber-400 font-bold shadow-md shadow-amber-950/30 scale-[1.02]'
+                                : 'bg-[#14141c] border-white/10 text-white/70 hover:text-white hover:border-white/20 hover:bg-white/5'
+                            }`}
+                          >
+                            <span>{cat.label}</span>
+                            <span
+                              className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
+                                isSelected
+                                  ? 'bg-black/25 text-black'
+                                  : 'bg-white/10 text-white/50'
+                              }`}
+                            >
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
+
+                      {selectedCategory !== 'all' && (
+                        <button
+                          onClick={() => setSelectedCategory('all')}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-white/40 hover:text-amber-400 transition-colors shrink-0 cursor-pointer"
+                          title="Limpar filtro de categoria"
+                        >
+                          <X className="w-3 h-3" />
+                          <span>Limpar</span>
+                        </button>
+                      )}
+                    </div>
+
                     {/* GRID DE FILMES E SÉRIES DOS ATORES */}
                     {visibleMediaItems.length === 0 ? (
-                      <div className="text-center py-20 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10">
+                      <div className="text-center py-20 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 space-y-2">
                         <Film className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
                         <h4 className="text-base font-bold text-zinc-300">Nenhum título encontrado</h4>
-                        <p className="text-xs text-zinc-500 mt-1">
-                          {activeTab === 'crossover'
+                        <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                          {selectedCategory !== 'all'
+                            ? `Nenhum filme ou série encontrado na categoria "${
+                                MOVIE_CATEGORIES.find((c) => c.id === selectedCategory)?.label || ''
+                              }".`
+                            : activeTab === 'crossover'
                             ? 'Nenhum filme ou série com 2 ou mais atores desta lista juntos.'
                             : 'Tente alterar os filtros ou adicione mais atores.'}
                         </p>
+                        {selectedCategory !== 'all' && (
+                          <button
+                            onClick={() => setSelectedCategory('all')}
+                            className="mt-2 text-xs font-bold text-amber-400 hover:text-amber-300 px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 cursor-pointer inline-flex items-center gap-1 transition-colors"
+                          >
+                            <X className="w-3 h-3" /> Ver todas as categorias
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <>

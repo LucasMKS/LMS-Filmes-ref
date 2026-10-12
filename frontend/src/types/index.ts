@@ -206,6 +206,8 @@ export interface TmdbCreditItem {
   vote_count: number;
   character?: string;
   overview: string;
+  genre_ids?: number[];
+  popularity?: number;
 }
 
 export interface TmdbPersonCredits {
