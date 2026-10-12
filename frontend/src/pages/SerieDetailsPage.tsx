@@ -59,6 +59,17 @@ export const SerieDetailsPage: React.FC = () => {
   const [showTrailerModal, setShowTrailerModal] = useState(false);
 
   useEffect(() => {
+    if (showTrailerModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showTrailerModal]);
+
+  useEffect(() => {
     if (serieId) {
       loadSerieDetails();
       if (isAuthenticated) {
@@ -584,9 +595,9 @@ export const SerieDetailsPage: React.FC = () => {
 
             {/* Cast Carousel */}
             {serie.credits?.cast && serie.credits.cast.length > 0 && (
-              <div className="pt-4">
+              <div className="pt-4 w-full max-w-full">
                 <h3 className="text-xl font-bold text-white mb-4">Elenco Principal</h3>
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-800">
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-800 horizontal-scroll touch-pan-x max-w-full">
                   {serie.credits.cast.slice(0, 15).map((actor) => (
                     <Link
                       key={actor.id}

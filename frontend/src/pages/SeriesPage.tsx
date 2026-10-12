@@ -109,7 +109,7 @@ export const SeriesPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1.5 horizontal-scroll touch-pan-x max-w-full sm:flex-wrap scrollbar-none">
               {tabs.map((tab) => {
                 const active = category === tab.id;
                 const Icon = tab.icon;
@@ -117,7 +117,7 @@ export const SeriesPage: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => handleCategoryChange(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
                       active
                         ? 'bg-amber-400 text-zinc-950 shadow-md shadow-amber-400/20'
                         : 'bg-zinc-900/80 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -131,7 +131,7 @@ export const SeriesPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSearchSubmit} className="relative min-w-[260px]">
+          <form onSubmit={handleSearchSubmit} className="relative w-full md:w-auto md:min-w-[260px]">
             <input
               type="text"
               placeholder="Buscar séries por título..."

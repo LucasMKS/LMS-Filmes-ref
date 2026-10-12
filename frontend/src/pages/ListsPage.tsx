@@ -39,6 +39,17 @@ export const ListsPage: React.FC = () => {
   const [deletingList, setDeletingList] = useState<{ id: number; type: 'media' | 'actors'; name: string } | null>(null);
 
   useEffect(() => {
+    if (isCreateModalOpen || isRenameModalOpen || !!deletingList) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isCreateModalOpen, isRenameModalOpen, deletingList]);
+
+  useEffect(() => {
     loadLists();
   }, []);
 
@@ -639,8 +650,8 @@ export const ListsPage: React.FC = () => {
 
       {/* Modal: Criar Nova Lista */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#12121a] border border-white/10 text-white rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-[#12121a] border border-white/10 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <FolderHeart className="w-5 h-5 text-purple-400" />
@@ -729,8 +740,8 @@ export const ListsPage: React.FC = () => {
 
       {/* Modal: Renomear / Editar Lista */}
       {isRenameModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#12121a] border border-white/10 text-white rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-[#12121a] border border-white/10 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl space-y-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-purple-400" />
@@ -789,8 +800,8 @@ export const ListsPage: React.FC = () => {
 
       {/* Modal: Confirmar Exclusão */}
       {deletingList && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#12121a] border border-white/10 text-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-[#12121a] border border-white/10 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl space-y-4 text-center max-h-[90dvh] overflow-y-auto">
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-red-400">
               <Trash2 className="w-6 h-6" />
             </div>

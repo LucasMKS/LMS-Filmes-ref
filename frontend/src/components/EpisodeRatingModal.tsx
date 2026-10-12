@@ -35,7 +35,13 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
     if (isOpen) {
       setRating(initialRating);
       setComment(initialComment);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen, initialRating, initialComment]);
 
   if (!isOpen) return null;
@@ -69,9 +75,9 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
   const displayRating = hoverRating !== null ? hoverRating : rating;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800">
           <div>
             <h3 className="text-base font-bold text-white">
               Avaliar T{seasonNumber} E{episodeNumber}
@@ -80,15 +86,15 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-3 sm:pt-4">
           <div className="flex flex-col items-center justify-center gap-3">
-            <div className="flex items-center gap-0.5 sm:gap-1 p-2 rounded-2xl bg-zinc-900/60 border border-white/[0.05]">
+            <div className="flex items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-2xl bg-zinc-900/60 border border-white/[0.05] max-w-full overflow-x-auto">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starVal) => {
                 const isFull = displayRating >= starVal;
                 const isHalf = !isFull && displayRating >= starVal - 0.5;

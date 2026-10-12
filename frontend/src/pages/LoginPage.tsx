@@ -31,8 +31,8 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+    <div className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12 w-full max-w-full">
+      <div className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
         {/* Glow accent */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-amber-400 rounded-full blur-[2px]" />
 

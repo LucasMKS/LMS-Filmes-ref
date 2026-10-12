@@ -62,6 +62,17 @@ export const MovieDetailsPage: React.FC = () => {
   const [showTrailerModal, setShowTrailerModal] = useState(false);
 
   useEffect(() => {
+    if (showTrailerModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showTrailerModal]);
+
+  useEffect(() => {
     if (movieId) {
       loadMovieDetails();
       if (isAuthenticated) {
@@ -208,7 +219,7 @@ export const MovieDetailsPage: React.FC = () => {
       </div>
 
       {/* Main Content Info */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-44 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32 sm:-mt-44 relative z-10 w-full">
         <div className="flex flex-col md:flex-row gap-8 items-start">
           {/* Poster */}
           <div className="w-48 sm:w-64 flex-shrink-0 mx-auto md:mx-0 rounded-2xl overflow-hidden shadow-2xl border-2 border-zinc-800 bg-zinc-900">
@@ -450,9 +461,9 @@ export const MovieDetailsPage: React.FC = () => {
 
         {/* Cast Carousel */}
         {movie.credits?.cast && movie.credits.cast.length > 0 && (
-          <div className="mt-12">
+          <div className="mt-12 w-full max-w-full">
             <h3 className="text-xl font-bold text-white mb-4">Elenco Principal</h3>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-800">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-800 horizontal-scroll touch-pan-x max-w-full">
               {movie.credits.cast.slice(0, 15).map((actor) => (
                 <Link
                   key={actor.id}

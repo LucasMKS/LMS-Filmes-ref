@@ -52,6 +52,17 @@ export const WatchlistPage: React.FC = () => {
   const [isSpinning, setIsSpinning] = useState(false);
 
   useEffect(() => {
+    if (isRandomDialogOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isRandomDialogOpen]);
+
+  useEffect(() => {
     const saved = localStorage.getItem('lms_watchlist_view_mode');
     if (saved === 'split' || saved === 'unified') {
       setViewMode(saved);
@@ -504,8 +515,8 @@ export const WatchlistPage: React.FC = () => {
 
       {/* Modal da Roleta da Watchlist */}
       {isRandomDialogOpen && randomItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#14141c] border border-white/[0.1] p-6 sm:p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl transition-all duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-[#14141c] border border-white/[0.1] p-5 sm:p-8 rounded-2xl sm:rounded-3xl max-w-sm w-full text-center shadow-2xl transition-all duration-300 max-h-[90dvh] overflow-y-auto">
             <h2 className="mb-2 text-xl sm:text-2xl font-black text-white">
               {isSpinning ? 'Girando a Roleta...' : 'A Roleta Escolheu!'}
             </h2>

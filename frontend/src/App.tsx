@@ -94,9 +94,9 @@ export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100 selection:bg-amber-500/30 selection:text-amber-300 font-sans antialiased">
+        <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden flex flex-col bg-zinc-950 text-zinc-100 selection:bg-amber-500/30 selection:text-amber-300 font-sans antialiased">
           <Navbar />
-          <main className="flex-1">
+          <main className="flex-1 w-full max-w-full overflow-x-hidden">
             <Routes>
               {/* Public Media Catalog */}
               <Route path="/" element={<HomePage />} />

@@ -692,7 +692,7 @@ export const ActorsPage: React.FC = () => {
             ) : (
               <>
                 {/* BARRA DE SELEÇÃO DE LISTAS (PILL TABS) */}
-                <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
                   <div className="flex items-center gap-2 flex-nowrap min-w-max">
                     <span className="text-xs text-white/40 font-bold uppercase tracking-wider flex items-center gap-1 mr-1">
                       <FolderHeart className="w-3.5 h-3.5 text-amber-400" /> Minhas Listas:
@@ -892,7 +892,7 @@ export const ActorsPage: React.FC = () => {
                 </div>
 
                 {/* SUGESTÕES RÁPIDAS DE ATORES */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
                   <span className="text-xs text-white/30 font-medium shrink-0 flex items-center gap-1 mr-1">
                     <Sparkles className="w-3 h-3 text-amber-400" /> Sugestões Populares:
                   </span>
@@ -1086,7 +1086,7 @@ export const ActorsPage: React.FC = () => {
                   <div className="space-y-4 pt-2">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                       {/* Abas */}
-                      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#14141c] border border-white/10 overflow-x-auto max-w-full scrollbar-none">
+                      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#14141c] border border-white/10 overflow-x-auto max-w-full scrollbar-none horizontal-scroll touch-pan-x">
                         <button
                           onClick={() => setActiveTab('recommended')}
                           className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
@@ -1217,7 +1217,7 @@ export const ActorsPage: React.FC = () => {
                     </div>
 
                     {/* BARRA DE FILTRO POR CATEGORIA (GÊNEROS) */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
                       <span className="text-xs text-white/40 font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
                         <Tag className="w-3.5 h-3.5 text-amber-400" /> Categorias:
                       </span>
