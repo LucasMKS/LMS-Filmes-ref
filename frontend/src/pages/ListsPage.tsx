@@ -13,6 +13,7 @@ import {
   Sparkles,
   X,
   ExternalLink,
+  Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -505,9 +506,22 @@ export const ListsPage: React.FC = () => {
                             <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors line-clamp-1">
                               {list.name}
                             </h3>
-                            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/5 text-white/60 font-semibold border border-white/10 flex-shrink-0">
-                              {itemsCount} {itemsCount === 1 ? 'item' : 'itens'}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {(() => {
+                                const validRatings = list.items?.map((i) => i.voteAverage).filter((v): v is number => typeof v === 'number' && v > 0) || [];
+                                if (validRatings.length === 0) return null;
+                                const avg = (validRatings.reduce((a, b) => a + b, 0) / validRatings.length).toFixed(1);
+                                return (
+                                  <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 font-bold border border-amber-500/20" title={`Média TMDB: ${avg}`}>
+                                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                    {avg}
+                                  </span>
+                                );
+                              })()}
+                              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/5 text-white/60 font-semibold border border-white/10">
+                                {itemsCount} {itemsCount === 1 ? 'item' : 'itens'}
+                              </span>
+                            </div>
                           </div>
                           {list.description && (
                             <p className="text-xs text-white/50 line-clamp-2 mt-1.5 font-medium">

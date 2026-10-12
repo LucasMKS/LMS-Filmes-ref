@@ -13,7 +13,9 @@ import {
   MapPin, 
   ListPlus, 
   Film, 
-  Tv 
+  Tv,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,6 +32,12 @@ export const ActorDetailsPage: React.FC = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [creditType, setCreditType] = useState<'all' | 'movie' | 'tv'>('all');
+  const [visibleCount, setVisibleCount] = useState<number>(24);
+
+  const handleCreditTypeChange = (type: 'all' | 'movie' | 'tv') => {
+    setCreditType(type);
+    setVisibleCount(24);
+  };
 
   useEffect(() => {
     if (actorId) {
@@ -209,25 +217,25 @@ export const ActorDetailsPage: React.FC = () => {
 
             <div className="flex items-center gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
               <button
-                onClick={() => setCreditType('all')}
+                onClick={() => handleCreditTypeChange('all')}
                 className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  creditType === 'all' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
+                  creditType === 'all' ? 'bg-amber-400 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 Tudo ({credits?.cast?.length || 0})
               </button>
               <button
-                onClick={() => setCreditType('movie')}
+                onClick={() => handleCreditTypeChange('movie')}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  creditType === 'movie' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
+                  creditType === 'movie' ? 'bg-amber-400 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 <Film className="w-3.5 h-3.5" /> Filmes
               </button>
               <button
-                onClick={() => setCreditType('tv')}
+                onClick={() => handleCreditTypeChange('tv')}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  creditType === 'tv' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
+                  creditType === 'tv' ? 'bg-amber-400 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 <Tv className="w-3.5 h-3.5" /> Séries
@@ -236,7 +244,7 @@ export const ActorDetailsPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {filteredCredits.slice(0, 30).map((item) => (
+            {filteredCredits.slice(0, visibleCount).map((item) => (
               <MediaCard
                 key={`${item.media_type}-${item.id}`}
                 id={item.id}
@@ -249,6 +257,44 @@ export const ActorDetailsPage: React.FC = () => {
               />
             ))}
           </div>
+
+          {/* Botão Ver Mais */}
+          {filteredCredits.length > visibleCount && (
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((prev) => prev + 24)}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-sm shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <ChevronDown className="w-4 h-4" />
+                Ver Mais ({Math.min(24, filteredCredits.length - visibleCount)} de {filteredCredits.length - visibleCount} restantes)
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibleCount(filteredCredits.length)}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-sm font-semibold transition-all cursor-pointer"
+              >
+                Ver Todos ({filteredCredits.length})
+              </button>
+            </div>
+          )}
+
+          {/* Opção de recolher caso tenha expandido muito */}
+          {visibleCount > 24 && filteredCredits.length > 24 && visibleCount >= filteredCredits.length && (
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setVisibleCount(24);
+                  window.scrollTo({ top: 380, behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 hover:text-white transition-all cursor-pointer"
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+                Recolher lista
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
