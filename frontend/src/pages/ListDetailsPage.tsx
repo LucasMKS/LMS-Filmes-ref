@@ -291,17 +291,6 @@ export const ListDetailsPage: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  const title = isActorList ? actorList?.name : mediaList?.name;
-  const description = isActorList ? actorList?.description : mediaList?.description;
-
   // Filter media items
   const filteredMedia = useMemo(() => {
     let result = loadedMedia.filter((item) => {
@@ -324,9 +313,78 @@ export const ListDetailsPage: React.FC = () => {
     return result;
   }, [loadedMedia, searchQuery, typeFilter, minRating, sortBy]);
 
-  const filteredActors = loadedActors.filter((actor) => {
-    return !searchQuery || actor.name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredActors = useMemo(() => {
+    return loadedActors.filter((actor) => {
+      return !searchQuery || actor.name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [loadedActors, searchQuery]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const title = isActorList ? actorList?.name : mediaList?.name;
+  const description = isActorList ? actorList?.description : mediaList?.description;
+
+  if (!isActorList && !mediaList) {
+    return (
+      <div className="min-h-screen pb-16 pt-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            onClick={() => navigate('/listas')}
+            className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors mb-6 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Listas
+          </button>
+          <div className="p-12 text-center bg-zinc-900/40 border border-zinc-800 rounded-2xl">
+            <BookmarkX className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+            <h2 className="text-xl font-bold text-white mb-2">Lista não encontrada</h2>
+            <p className="text-sm text-zinc-400 mb-6">A lista que você tentou acessar não existe ou foi removida.</p>
+            <button
+              onClick={() => navigate('/listas')}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
+            >
+              Ver todas as listas
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isActorList && !actorList) {
+    return (
+      <div className="min-h-screen pb-16 pt-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            onClick={() => navigate('/listas')}
+            className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors mb-6 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Listas
+          </button>
+          <div className="p-12 text-center bg-zinc-900/40 border border-zinc-800 rounded-2xl">
+            <BookmarkX className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+            <h2 className="text-xl font-bold text-white mb-2">Lista de atores não encontrada</h2>
+            <p className="text-sm text-zinc-400 mb-6">A lista que você tentou acessar não existe ou foi removida.</p>
+            <button
+              onClick={() => navigate('/listas')}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
+            >
+              Ver todas as listas
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-16 pt-6">
