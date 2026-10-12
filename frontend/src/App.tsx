@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 
@@ -25,6 +25,18 @@ import { useUserRatingsStore } from './store/useUserRatingsStore';
 import { useFavoritesStore } from './store/useFavoritesStore';
 import { useWatchlistStore } from './store/useWatchlistStore';
 import { Film } from 'lucide-react';
+
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Reset any locked body overflow from unmounted modals
+    document.body.style.overflow = '';
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -94,9 +106,10 @@ export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden flex flex-col bg-zinc-950 text-zinc-100 selection:bg-amber-500/30 selection:text-amber-300 font-sans antialiased">
+        <ScrollToTop />
+        <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100 selection:bg-amber-500/30 selection:text-amber-300 font-sans antialiased">
           <Navbar />
-          <main className="flex-1 w-full max-w-full overflow-x-hidden">
+          <main className="flex-1 w-full">
             <Routes>
               {/* Public Media Catalog */}
               <Route path="/" element={<HomePage />} />
