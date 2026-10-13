@@ -200,7 +200,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               <button
                 type="button"
                 onClick={() => setRating((prev) => Math.max(0.5, Number((prev - 0.5).toFixed(1))))}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-indigo-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
                 title="Diminuir meia estrela (-0.5)"
               >
                 -0.5
@@ -216,7 +216,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               <button
                 type="button"
                 onClick={() => setRating((prev) => Math.min(10, Number((prev + 0.5).toFixed(1))))}
-                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-amber-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-indigo-500/40 text-xs text-zinc-300 font-bold transition-all cursor-pointer"
                 title="Aumentar meia estrela (+0.5)"
               >
                 +0.5
@@ -227,7 +227,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
           {/* Comment */}
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-xs font-semibold text-zinc-300">
-              <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
+              <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
               Sua Resenha / Comentário (Opcional)
             </label>
             <textarea
@@ -235,14 +235,14 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               onChange={(e) => setComment(e.target.value)}
               placeholder="O que você achou dessa produção?"
               rows={3}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 resize-none"
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20 resize-none"
             />
           </div>
 
           {/* Rewatch Count */}
           <div className="flex items-center justify-between p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl">
             <div className="flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-amber-400" />
+              <RotateCcw className="w-4 h-4 text-indigo-400" />
               <div>
                 <p className="text-sm font-medium text-zinc-200">Quantas vezes reassistiu?</p>
                 <p className="text-xs text-zinc-500">0 se foi apenas a primeira vez</p>
@@ -252,7 +252,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               <button
                 type="button"
                 onClick={() => setRewatchCount(Math.max(0, rewatchCount - 1))}
-                className="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white flex items-center justify-center font-bold"
+                className="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white flex items-center justify-center font-bold cursor-pointer"
               >
                 -
               </button>
@@ -262,7 +262,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               <button
                 type="button"
                 onClick={() => setRewatchCount(rewatchCount + 1)}
-                className="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white flex items-center justify-center font-bold"
+                className="w-8 h-8 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white flex items-center justify-center font-bold cursor-pointer"
               >
                 +
               </button>
@@ -276,7 +276,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded-xl transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded-xl transition-colors cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
                 Excluir Nota
@@ -287,14 +287,14 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-white"
+                className="px-4 py-2 text-sm text-zinc-400 hover:text-white cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={submitting || rating <= 0}
-                className="px-5 py-2 text-sm font-semibold rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 disabled:opacity-50 transition-all shadow-md shadow-amber-400/20"
+                className="px-5 py-2 text-sm font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
               >
                 {submitting ? 'Salvando...' : 'Salvar Avaliação'}
               </button>

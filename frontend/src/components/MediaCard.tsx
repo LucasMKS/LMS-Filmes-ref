@@ -117,9 +117,9 @@ export const MediaCard: React.FC<MediaCardProps> = ({
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#14141c] transition-all duration-300 hover:-translate-y-1.5 hover:border-purple-500/20 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f1320] transition-all duration-300 hover:-translate-y-1.5 hover:border-indigo-500/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
       {/* Top subtle glow on hover */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-30" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-30" />
 
       {/* Poster Container */}
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5">
@@ -133,12 +133,12 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         </Link>
 
         {/* Gradient dark overlay */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent opacity-60" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#090c15] via-transparent to-transparent opacity-60" />
 
         {/* Category Badge (Top Left) */}
         <div
           className={`pointer-events-none absolute left-3 top-3 z-20 flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg backdrop-blur-md rounded-xl ${
-            type === 'movie' ? 'bg-purple-600/90' : 'bg-violet-600/90'
+            type === 'movie' ? 'bg-indigo-600/90' : 'bg-violet-600/90'
           }`}
         >
           {type === 'movie' ? <Film className="w-3 h-3" /> : <Tv className="w-3 h-3" />}
@@ -189,7 +189,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
                 e.stopPropagation();
                 onQuickView();
               }}
-              className="h-12 w-12 rounded-full border border-white/10 bg-[#0a0a0f]/80 text-white shadow-2xl backdrop-blur-xl transition-all duration-200 hover:scale-110 hover:bg-purple-600 hover:border-purple-500/40 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] flex items-center justify-center"
+              className="h-12 w-12 rounded-full border border-white/10 bg-[#0a0a0f]/80 text-white shadow-2xl backdrop-blur-xl transition-all duration-200 hover:scale-110 hover:bg-indigo-600 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] flex items-center justify-center cursor-pointer"
               aria-label="Visualização rápida"
               title="Visualização rápida"
             >
@@ -201,8 +201,8 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         {/* Rating Badge (Bottom Right) */}
         <div className="pointer-events-none absolute right-3 bottom-3 z-20">
           {hasUserRating ? (
-            <div className="flex items-center gap-1.5 rounded-xl border border-yellow-500/40 bg-yellow-500/20 px-2.5 py-1 text-xs font-extrabold text-yellow-300 shadow-[0_0_12px_rgba(234,179,8,0.25)] backdrop-blur-md">
-              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+            <div className="flex items-center gap-1.5 rounded-xl border border-amber-400/30 bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)] backdrop-blur-md">
+              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
               <span>{userRating?.rating != null ? Number(userRating.rating).toFixed(1) : '0.0'}</span>
             </div>
           ) : (
@@ -220,7 +220,7 @@ export const MediaCard: React.FC<MediaCardProps> = ({
         {/* Comment Badge (Bottom Left, if comment exists) */}
         {userRating?.comment && (
           <div
-            className="pointer-events-none absolute left-3 bottom-3 z-20 flex items-center gap-1 rounded-xl border border-emerald-500/30 bg-emerald-600/90 px-2 py-1 text-white shadow-lg backdrop-blur-md"
+            className="pointer-events-none absolute left-3 bottom-3 z-20 flex items-center gap-1 rounded-xl border border-indigo-500/30 bg-indigo-600/90 px-2 py-1 text-white shadow-lg backdrop-blur-md"
             title="Possui comentário"
           >
             <MessageSquare className="h-3 w-3" />
@@ -230,11 +230,11 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       </div>
 
       {/* Footer Info */}
-      <div className="border-t border-white/[0.05] bg-[#14141c] px-4 py-3.5 flex flex-col justify-between flex-1">
+      <div className="border-t border-white/[0.05] bg-[#0f1320] px-4 py-3.5 flex flex-col justify-between flex-1">
         <div>
           <Link
             to={detailUrl}
-            className="mb-0.5 line-clamp-1 text-sm font-bold text-white/90 transition-colors duration-200 group-hover:text-purple-300"
+            className="mb-0.5 line-clamp-1 text-sm font-bold text-white/90 transition-colors duration-200 group-hover:text-indigo-300"
             title={title}
           >
             {title}

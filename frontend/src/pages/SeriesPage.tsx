@@ -93,12 +93,12 @@ export const SeriesPage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           {queryParam ? (
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                 <Search className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  Séries para: <span className="text-amber-400">"{queryParam}"</span>
+                  Séries para: <span className="text-indigo-400">"{queryParam}"</span>
                 </h2>
                 <button
                   onClick={() => setSearchParams({})}
@@ -117,13 +117,13 @@ export const SeriesPage: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => handleCategoryChange(tab.id)}
-                    className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
+                    className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
                       active
-                        ? 'bg-amber-400 text-zinc-950 shadow-md shadow-amber-400/20'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25 border border-indigo-500/40'
                         : 'bg-zinc-900/80 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-zinc-400'}`} />
                     {tab.label}
                   </button>
                 );
@@ -137,11 +137,11 @@ export const SeriesPage: React.FC = () => {
               placeholder="Buscar séries por título..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-400 hover:text-amber-400"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-400 hover:text-indigo-400 transition-colors"
             >
               <Search className="w-4 h-4" />
             </button>

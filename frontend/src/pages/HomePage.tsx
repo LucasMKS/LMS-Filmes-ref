@@ -111,10 +111,10 @@ export const HomePage: React.FC = () => {
 
           <div className="relative max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-12">
             <div className="max-w-2xl space-y-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                <Flame className="w-3.5 h-3.5" /> Destaque
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 backdrop-blur-md">
+                <Flame className="w-3.5 h-3.5 text-indigo-400" /> Destaque da Semana
               </span>
-              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
                 {featured.title}
               </h1>
               <p className="text-zinc-300 text-sm sm:text-base line-clamp-3 max-w-xl font-normal leading-relaxed">
@@ -123,7 +123,7 @@ export const HomePage: React.FC = () => {
               <div className="flex items-center gap-4 pt-2">
                 <Link
                   to={`/filmes/${featured.id}`}
-                  className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-sm rounded-xl transition-all shadow-lg shadow-amber-400/20"
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl transition-all shadow-lg shadow-indigo-600/30 hover:scale-[1.02]"
                 >
                   Ver Detalhes
                 </Link>
@@ -138,12 +138,12 @@ export const HomePage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           {queryParam ? (
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                 <Search className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">
-                  Resultados para: <span className="text-amber-400">"{queryParam}"</span>
+                  Resultados para: <span className="text-indigo-400">"{queryParam}"</span>
                 </h2>
                 <button
                   onClick={() => setSearchParams({})}
@@ -162,13 +162,13 @@ export const HomePage: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => handleCategoryChange(tab.id)}
-                    className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 ${
+                    className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
                       active
-                        ? 'bg-amber-400 text-zinc-950 shadow-md shadow-amber-400/20'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25 border border-indigo-500/40'
                         : 'bg-zinc-900/80 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-zinc-400'}`} />
                     {tab.label}
                   </button>
                 );
@@ -183,11 +183,11 @@ export const HomePage: React.FC = () => {
               placeholder="Buscar filmes por título..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-400 hover:text-amber-400"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-zinc-400 hover:text-indigo-400 transition-colors"
             >
               <Search className="w-4 h-4" />
             </button>

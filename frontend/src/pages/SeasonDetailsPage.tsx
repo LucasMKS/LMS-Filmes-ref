@@ -137,7 +137,7 @@ export const SeasonDetailsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -146,7 +146,7 @@ export const SeasonDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen max-w-7xl mx-auto px-4 py-20 text-center">
         <h2 className="text-2xl font-bold text-white">Temporada não encontrada</h2>
-        <Link to={`/series/${serieId}`} className="text-amber-400 hover:underline mt-4 inline-block">
+        <Link to={`/series/${serieId}`} className="text-indigo-400 hover:text-indigo-300 hover:underline mt-4 inline-block">
           Voltar para a série
         </Link>
       </div>
@@ -176,7 +176,7 @@ export const SeasonDetailsPage: React.FC = () => {
           {isAuthenticated && (
             <button
               onClick={handleMarkAllSeason}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-amber-400 text-xs font-semibold rounded-xl border border-zinc-800 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-indigo-400 hover:text-indigo-300 text-xs font-semibold rounded-xl border border-indigo-500/20 hover:border-indigo-500/40 transition-colors"
             >
               <CheckCheck className="w-4 h-4" />
               Marcar Temporada Inteira como Assistida
@@ -220,8 +220,8 @@ export const SeasonDetailsPage: React.FC = () => {
                 key={ep.id}
                 className={`flex flex-col sm:flex-row gap-4 p-4 rounded-xl border transition-all ${
                   isWatched
-                    ? 'bg-zinc-900/30 border-amber-500/20'
-                    : 'bg-zinc-900/70 border-zinc-800/80'
+                    ? 'bg-zinc-900/40 border-indigo-500/25'
+                    : 'bg-zinc-900/70 border-zinc-800/80 hover:border-zinc-700'
                 }`}
               >
                 {/* Thumbnail */}
@@ -253,14 +253,14 @@ export const SeasonDetailsPage: React.FC = () => {
                         onClick={() => handleToggleWatched(ep.episode_number)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           isWatched
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                            ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/25'
                             : 'bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700'
                         }`}
                         title={isWatched ? 'Marcar como não assistido' : 'Marcar como assistido'}
                       >
                         {isWatched ? (
                           <>
-                            <CheckCircle2 className="w-4 h-4 fill-amber-400/20" />
+                            <CheckCircle2 className="w-4 h-4 fill-indigo-500/20 text-indigo-400" />
                             Assistido
                           </>
                         ) : (
@@ -314,7 +314,7 @@ export const SeasonDetailsPage: React.FC = () => {
                           comment: ratingObj?.comment,
                         })
                       }
-                      className="px-2.5 py-1 text-xs font-semibold text-zinc-300 hover:text-amber-400 bg-zinc-800/80 hover:bg-zinc-800 rounded-lg transition-colors border border-zinc-700/60"
+                      className="px-2.5 py-1 text-xs font-semibold text-zinc-300 hover:text-indigo-300 bg-zinc-800/80 hover:bg-zinc-800 rounded-lg transition-colors border border-zinc-700/60"
                     >
                       {ratingObj ? 'Editar Nota' : 'Avaliar Episódio'}
                     </button>

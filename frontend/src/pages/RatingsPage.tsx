@@ -134,7 +134,7 @@ export const RatingsPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar avaliações por título..."
-                className="w-full bg-[#14141c] border border-white/[0.08] rounded-xl pl-9 pr-9 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-yellow-500 transition-colors"
+                className="w-full bg-[#14141c] border border-white/[0.08] rounded-xl pl-9 pr-9 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20 transition-colors"
               />
               {searchQuery && (
                 <button
@@ -153,15 +153,15 @@ export const RatingsPage: React.FC = () => {
             <div className="flex items-center bg-[#14141c] p-1 rounded-xl border border-white/[0.06] text-xs">
               <button
                 onClick={() => setActiveTab('movies')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  activeTab === 'movies' ? 'bg-purple-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                  activeTab === 'movies' ? 'bg-indigo-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 <Film className="w-3.5 h-3.5" /> Filmes ({filteredMovies.length})
               </button>
               <button
                 onClick={() => setActiveTab('series')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
                   activeTab === 'series' ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -174,9 +174,9 @@ export const RatingsPage: React.FC = () => {
               <button
                 onClick={() => handleViewModeChange('split')}
                 title="Visão Lado a Lado (Filmes na Esquerda | Séries na Direita)"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   viewMode === 'split'
-                    ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
                     : 'text-zinc-400 hover:text-white border border-transparent'
                 }`}
               >
@@ -186,7 +186,7 @@ export const RatingsPage: React.FC = () => {
               <button
                 onClick={() => handleViewModeChange('unified')}
                 title="Grid Padrão por Aba"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   viewMode === 'unified'
                     ? 'bg-white/10 text-white border border-white/10'
                     : 'text-zinc-400 hover:text-white border border-transparent'

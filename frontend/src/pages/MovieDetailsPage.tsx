@@ -165,7 +165,7 @@ export const MovieDetailsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -174,7 +174,7 @@ export const MovieDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen max-w-7xl mx-auto px-4 py-20 text-center">
         <h2 className="text-2xl font-bold text-white">Filme não encontrado</h2>
-        <Link to="/" className="text-amber-400 hover:underline mt-4 inline-block">
+        <Link to="/" className="text-indigo-400 hover:underline mt-4 inline-block">
           Voltar para a página inicial
         </Link>
       </div>
@@ -294,11 +294,11 @@ export const MovieDetailsPage: React.FC = () => {
                 onClick={() => setIsRatingModalOpen(true)}
                 className={`flex items-center gap-2 px-5 py-2.5 text-sm rounded-xl transition-all shadow-md cursor-pointer ${
                   userRating
-                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 font-bold shadow-amber-500/15 hover:scale-[1.02]'
-                    : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-zinc-950 font-black shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98]'
+                    ? 'bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 font-semibold shadow-sm hover:scale-[1.02]'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:scale-[1.02] active:scale-[0.98]'
                 }`}
               >
-                <Star className={`w-4 h-4 ${userRating ? 'fill-amber-400 text-amber-400' : 'fill-zinc-950 text-zinc-950'}`} />
+                <Star className={`w-4 h-4 ${userRating ? 'fill-amber-400 text-amber-400' : 'fill-white/80 text-white/80'}`} />
                 <span>{userRating ? `Minha Nota: ${Number(userRating).toFixed(1)}/10` : 'Avaliar Filme'}</span>
               </button>
 
@@ -332,9 +332,9 @@ export const MovieDetailsPage: React.FC = () => {
               {/* Add to Custom List */}
               <button
                 onClick={() => setIsListModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
               >
-                <ListPlus className="w-4 h-4 text-amber-400" />
+                <ListPlus className="w-4 h-4 text-indigo-400" />
                 Listas
               </button>
             </div>
@@ -354,12 +354,12 @@ export const MovieDetailsPage: React.FC = () => {
           <div className={`mt-8 grid gap-6 ${userRating != null && watchProviders && (watchProviders.flatrate || watchProviders.rent || watchProviders.buy) ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
             {/* User Review Display if already rated */}
             {userRating != null && (
-              <div className="p-6 bg-gradient-to-br from-amber-500/10 via-zinc-900/80 to-zinc-900/60 border border-amber-500/30 rounded-2xl shadow-xl flex flex-col justify-between">
+              <div className="p-6 bg-gradient-to-br from-indigo-500/10 via-zinc-900/80 to-zinc-900/60 border border-indigo-500/25 rounded-2xl shadow-xl flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/5">
                     <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 font-extrabold text-sm rounded-lg border border-amber-500/40">
-                        <Star className="w-4 h-4 fill-amber-400" /> Minha Avaliação: {Number(userRating).toFixed(1)}/10
+                      <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 text-amber-300 font-bold text-sm rounded-lg border border-amber-500/30">
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" /> Minha Avaliação: {Number(userRating).toFixed(1)}/10
                       </span>
                       {userRewatch > 0 && (
                         <span className="text-xs font-semibold text-zinc-400 px-2.5 py-1 rounded-md bg-zinc-800/80 border border-zinc-700/50">
@@ -368,8 +368,9 @@ export const MovieDetailsPage: React.FC = () => {
                       )}
                     </div>
                     <button
+                      type="button"
                       onClick={() => setIsRatingModalOpen(true)}
-                      className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-400 font-medium transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       Editar
@@ -377,9 +378,9 @@ export const MovieDetailsPage: React.FC = () => {
                   </div>
                   {userComment ? (
                     <div className="flex items-start gap-3 pt-1">
-                      <MessageSquare className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
+                      <MessageSquare className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-1" />
                       <div>
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block mb-1">Meu Comentário</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 block mb-1">Meu Comentário</span>
                         <p className="text-sm text-zinc-200 leading-relaxed italic">"{userComment}"</p>
                       </div>
                     </div>
@@ -395,7 +396,7 @@ export const MovieDetailsPage: React.FC = () => {
               <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl flex flex-col justify-between">
                 <div>
                   <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                    <Tv className="w-5 h-5 text-amber-400" />
+                    <Tv className="w-5 h-5 text-indigo-400" />
                     Onde Assistir no Brasil
                   </h3>
                   <div className="flex flex-wrap gap-6">
@@ -470,7 +471,7 @@ export const MovieDetailsPage: React.FC = () => {
                   to={`/atores/${actor.id}`}
                   className="flex-shrink-0 w-28 group text-center"
                 >
-                  <div className="w-28 h-36 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 group-hover:border-amber-500/50 transition-colors">
+                  <div className="w-28 h-36 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 group-hover:border-indigo-500/50 transition-colors">
                     <img
                       src={
                         actor.profile_path
@@ -481,7 +482,7 @@ export const MovieDetailsPage: React.FC = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   </div>
-                  <p className="text-xs font-semibold text-zinc-200 mt-2 truncate group-hover:text-amber-400">
+                  <p className="text-xs font-semibold text-zinc-200 mt-2 truncate group-hover:text-indigo-300">
                     {actor.name}
                   </p>
                   <p className="text-[11px] text-zinc-500 truncate">{actor.character}</p>

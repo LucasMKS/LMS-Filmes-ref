@@ -97,7 +97,7 @@ export const ActorDetailsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -106,7 +106,7 @@ export const ActorDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen max-w-7xl mx-auto px-4 py-20 text-center">
         <h2 className="text-2xl font-bold text-white">Ator não encontrado</h2>
-        <Link to="/atores" className="text-amber-400 hover:underline mt-4 inline-block">
+        <Link to="/atores" className="text-indigo-400 hover:underline mt-4 inline-block">
           Voltar para a lista de atores
         </Link>
       </div>
@@ -181,7 +181,7 @@ export const ActorDetailsPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
                 onClick={handleToggleFavorite}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                   isFavorite
                     ? 'bg-red-500/20 border-red-500/50 text-red-500'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
@@ -193,9 +193,9 @@ export const ActorDetailsPage: React.FC = () => {
 
               <button
                 onClick={() => setIsListModalOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
               >
-                <ListPlus className="w-4 h-4 text-amber-400" />
+                <ListPlus className="w-4 h-4 text-indigo-400" />
                 Listas de Atores
               </button>
             </div>
@@ -218,24 +218,24 @@ export const ActorDetailsPage: React.FC = () => {
             <div className="flex items-center gap-2 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
               <button
                 onClick={() => handleCreditTypeChange('all')}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  creditType === 'all' ? 'bg-amber-400 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                  creditType === 'all' ? 'bg-indigo-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 Tudo ({credits?.cast?.length || 0})
               </button>
               <button
                 onClick={() => handleCreditTypeChange('movie')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  creditType === 'movie' ? 'bg-amber-400 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                  creditType === 'movie' ? 'bg-indigo-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 <Film className="w-3.5 h-3.5" /> Filmes
               </button>
               <button
                 onClick={() => handleCreditTypeChange('tv')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  creditType === 'tv' ? 'bg-amber-400 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                  creditType === 'tv' ? 'bg-indigo-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 <Tv className="w-3.5 h-3.5" /> Séries
@@ -264,7 +264,7 @@ export const ActorDetailsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setVisibleCount((prev) => prev + 24)}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-sm shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               >
                 <ChevronDown className="w-4 h-4" />
                 Ver Mais ({Math.min(24, filteredCredits.length - visibleCount)} de {filteredCredits.length - visibleCount} restantes)

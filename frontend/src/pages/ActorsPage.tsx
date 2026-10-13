@@ -605,7 +605,7 @@ export const ActorsPage: React.FC = () => {
                 onClick={() => setMainView('my_lists')}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                   mainView === 'my_lists'
-                    ? 'bg-amber-500 text-black font-bold shadow'
+                    ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20'
                     : 'text-white/50 hover:text-white'
                 }`}
               >
@@ -616,7 +616,7 @@ export const ActorsPage: React.FC = () => {
                 onClick={() => setMainView('explore')}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                   mainView === 'explore'
-                    ? 'bg-amber-500 text-black font-bold shadow'
+                    ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20'
                     : 'text-white/50 hover:text-white'
                 }`}
               >
@@ -632,7 +632,7 @@ export const ActorsPage: React.FC = () => {
                   setListDescInput('');
                   setIsCreateModalOpen(true);
                 }}
-                className="bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-2xl h-10 px-4 text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-[1.02] cursor-pointer"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-2xl h-10 px-4 text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all hover:scale-[1.02] cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 Nova Lista
@@ -648,14 +648,14 @@ export const ActorsPage: React.FC = () => {
           <div className="mt-8 space-y-6">
             {!isAuthenticated ? (
               <div className="text-center py-20 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 space-y-4 max-w-xl mx-auto">
-                <Users className="w-12 h-12 text-amber-400/60 mx-auto" />
+                <Users className="w-12 h-12 text-indigo-400/60 mx-auto" />
                 <h3 className="text-xl font-bold text-white">Faça login para gerenciar listas de atores</h3>
                 <p className="text-xs text-white/50 leading-relaxed px-6">
                   Crie coleções com seus atores e atrizes favoritos para descobrir produções onde eles atuaram juntos.
                 </p>
                 <Link
                   to="/login"
-                  className="bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-2xl px-6 py-2.5 text-xs shadow-lg shadow-amber-500/20 inline-block"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl px-6 py-2.5 text-xs shadow-lg shadow-indigo-600/20 inline-block"
                 >
                   Fazer Login
                 </Link>
@@ -668,7 +668,7 @@ export const ActorsPage: React.FC = () => {
               </div>
             ) : actorLists.length === 0 ? (
               <div className="text-center py-20 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 space-y-4 max-w-xl mx-auto">
-                <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400">
+                <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto text-indigo-400">
                   <FolderHeart className="w-8 h-8" />
                 </div>
                 <div className="space-y-1">
@@ -683,7 +683,7 @@ export const ActorsPage: React.FC = () => {
                     setListDescInput('');
                     setIsCreateModalOpen(true);
                   }}
-                  className="bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-2xl px-6 h-11 text-xs shadow-lg shadow-amber-500/20 inline-flex items-center gap-2 cursor-pointer"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-2xl px-6 h-11 text-xs shadow-lg shadow-indigo-600/20 inline-flex items-center gap-2 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   Criar Lista de Atores
@@ -695,7 +695,7 @@ export const ActorsPage: React.FC = () => {
                 <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
                   <div className="flex items-center gap-2 flex-nowrap min-w-max">
                     <span className="text-xs text-white/40 font-bold uppercase tracking-wider flex items-center gap-1 mr-1">
-                      <FolderHeart className="w-3.5 h-3.5 text-amber-400" /> Minhas Listas:
+                      <FolderHeart className="w-3.5 h-3.5 text-indigo-400" /> Minhas Listas:
                     </span>
 
                     {actorLists.map((list) => {
@@ -708,14 +708,14 @@ export const ActorsPage: React.FC = () => {
                           onClick={() => setSelectedListId(list.id)}
                           className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border cursor-pointer ${
                             isSelected
-                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-lg shadow-amber-950/30 font-bold scale-[1.02]'
+                              ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 shadow-md shadow-indigo-950/30 font-bold scale-[1.02]'
                               : 'bg-[#14141c] border-white/10 text-white/60 hover:text-white hover:border-white/20 hover:bg-white/[0.04]'
                           }`}
                         >
                           <span className="truncate max-w-[160px]">{list.name}</span>
                           <span
                             className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold transition-colors ${
-                              isSelected ? 'bg-amber-400 text-black' : 'bg-white/10 text-white/50 group-hover:text-white'
+                              isSelected ? 'bg-indigo-600 text-white' : 'bg-white/10 text-white/50 group-hover:text-white'
                             }`}
                           >
                             {count}
@@ -730,7 +730,7 @@ export const ActorsPage: React.FC = () => {
                         setListDescInput('');
                         setIsCreateModalOpen(true);
                       }}
-                      className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-white/40 hover:text-amber-400 hover:border-amber-500/30 border border-dashed border-white/10 transition-colors shrink-0 cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-white/40 hover:text-indigo-400 hover:border-indigo-500/30 border border-dashed border-white/10 transition-colors shrink-0 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Nova Lista</span>
@@ -744,7 +744,7 @@ export const ActorsPage: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-bold text-white truncate">{activeList.name}</h2>
-                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold shrink-0">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-semibold shrink-0">
                           {selectedActors.length} {selectedActors.length === 1 ? 'ator/atriz' : 'atores/atrizes'}
                         </span>
                       </div>
@@ -767,7 +767,7 @@ export const ActorsPage: React.FC = () => {
                         className="text-xs font-semibold text-white/70 hover:text-white hover:bg-white/5 h-8 px-2.5 rounded-xl gap-1.5 border border-white/10 inline-flex items-center cursor-pointer transition-colors"
                         title="Renomear lista ou editar descrição"
                       >
-                        <Pencil className="w-3 h-3 text-amber-400" />
+                        <Pencil className="w-3 h-3 text-indigo-400" />
                         Renomear
                       </button>
 
@@ -799,7 +799,7 @@ export const ActorsPage: React.FC = () => {
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
                       {isSearchingActor ? (
-                        <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
+                        <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
                       ) : (
                         <Search className="w-4 h-4 text-white/40" />
                       )}
@@ -811,7 +811,7 @@ export const ActorsPage: React.FC = () => {
                       onChange={(e) => setActorSearchQuery(e.target.value)}
                       onFocus={() => actorSearchQuery.trim() && setIsSearchDropdownOpen(true)}
                       placeholder={`Adicionar ator ou atriz em "${activeList?.name || 'Lista'}" (ex: Bryan Cranston, Zendaya, Wagner Moura)...`}
-                      className="w-full pl-11 pr-10 py-3 h-12 bg-[#14141c] border border-white/10 hover:border-white/20 focus:border-amber-500/50 rounded-2xl text-white placeholder:text-white/30 text-sm shadow-xl backdrop-blur-xl transition-all focus:outline-none"
+                      className="w-full pl-11 pr-10 py-3 h-12 bg-[#14141c] border border-white/10 hover:border-white/20 focus:border-indigo-500/70 focus:ring-1 focus:ring-indigo-500/20 rounded-2xl text-white placeholder:text-white/30 text-sm shadow-xl backdrop-blur-xl transition-all focus:outline-none"
                     />
 
                     {actorSearchQuery && (
@@ -879,7 +879,7 @@ export const ActorsPage: React.FC = () => {
                                   <Check className="w-3 h-3" /> Na Lista
                                 </span>
                               ) : (
-                                <button className="bg-amber-500 hover:bg-amber-400 text-black font-bold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer">
+                                <button className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors">
                                   <Plus className="w-3 h-3" /> Adicionar
                                 </button>
                               )}
@@ -894,7 +894,7 @@ export const ActorsPage: React.FC = () => {
                 {/* SUGESTÕES RÁPIDAS DE ATORES */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
                   <span className="text-xs text-white/30 font-medium shrink-0 flex items-center gap-1 mr-1">
-                    <Sparkles className="w-3 h-3 text-amber-400" /> Sugestões Populares:
+                    <Sparkles className="w-3 h-3 text-indigo-400" /> Sugestões Populares:
                   </span>
                   {POPULAR_SUGGESTIONS.map((actor) => {
                     const isSelected = selectedActors.some((a) => a.id === actor.id);
@@ -908,13 +908,13 @@ export const ActorsPage: React.FC = () => {
                         }
                         className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 border transition-all flex items-center gap-1.5 cursor-pointer ${
                           isSelected
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 font-semibold'
+                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 font-semibold'
                             : 'bg-white/[0.03] text-white/60 hover:text-white hover:bg-white/[0.07] border-white/10'
                         }`}
                       >
                         <span>{actor.name}</span>
                         {isSelected ? (
-                          <Check className="w-3 h-3 text-amber-400" />
+                          <Check className="w-3 h-3 text-indigo-400" />
                         ) : (
                           <Plus className="w-3 h-3 text-white/30" />
                         )}
@@ -930,10 +930,10 @@ export const ActorsPage: React.FC = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/5">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-white/80 uppercase tracking-wider flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-amber-400" />
+                          <Users className="w-3.5 h-3.5 text-indigo-400" />
                           Atores na Lista
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
                           {selectedActors.length} {selectedActors.length === 1 ? 'ator' : 'atores'}
                         </span>
                         <span className="text-xs text-white/40 hidden md:inline">•</span>
@@ -1104,7 +1104,7 @@ export const ActorsPage: React.FC = () => {
                             onClick={() => setActiveTab('crossover')}
                             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                               activeTab === 'crossover'
-                                ? 'bg-amber-500 text-black shadow-md font-bold'
+                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-bold'
                                 : 'text-white/50 hover:text-white'
                             }`}
                           >
@@ -1174,7 +1174,7 @@ export const ActorsPage: React.FC = () => {
                             onClick={() => setMediaTypeFilter('all')}
                             className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                               mediaTypeFilter === 'all'
-                                ? 'bg-purple-600 text-white'
+                                ? 'bg-indigo-600 text-white'
                                 : 'text-white/40 hover:text-white'
                             }`}
                           >
@@ -1184,7 +1184,7 @@ export const ActorsPage: React.FC = () => {
                             onClick={() => setMediaTypeFilter('movie')}
                             className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
                               mediaTypeFilter === 'movie'
-                                ? 'bg-purple-600 text-white'
+                                ? 'bg-indigo-600 text-white'
                                 : 'text-white/40 hover:text-white'
                             }`}
                           >
@@ -1194,7 +1194,7 @@ export const ActorsPage: React.FC = () => {
                             onClick={() => setMediaTypeFilter('tv')}
                             className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
                               mediaTypeFilter === 'tv'
-                                ? 'bg-purple-600 text-white'
+                                ? 'bg-indigo-600 text-white'
                                 : 'text-white/40 hover:text-white'
                             }`}
                           >
@@ -1210,7 +1210,7 @@ export const ActorsPage: React.FC = () => {
                             placeholder="Filtrar títulos..."
                             value={titleFilter}
                             onChange={(e) => setTitleFilter(e.target.value)}
-                            className="w-full pl-8 pr-3 py-1.5 bg-[#14141c] border border-white/10 text-white text-xs rounded-xl focus:border-amber-500 focus:outline-none"
+                            className="w-full pl-8 pr-3 py-1.5 bg-[#14141c] border border-white/10 text-white text-xs rounded-xl focus:border-indigo-500 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -1219,7 +1219,7 @@ export const ActorsPage: React.FC = () => {
                     {/* BARRA DE FILTRO POR CATEGORIA (GÊNEROS) */}
                     <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
                       <span className="text-xs text-white/40 font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
-                        <Tag className="w-3.5 h-3.5 text-amber-400" /> Categorias:
+                        <Tag className="w-3.5 h-3.5 text-indigo-400" /> Categorias:
                       </span>
 
                       {availableCategories.map((cat) => {
@@ -1236,7 +1236,7 @@ export const ActorsPage: React.FC = () => {
                             onClick={() => setSelectedCategory(cat.id)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer border ${
                               isSelected
-                                ? 'bg-amber-500 text-black border-amber-400 font-bold shadow-md shadow-amber-950/30 scale-[1.02]'
+                                ? 'bg-indigo-600 text-white border-indigo-500 font-bold shadow-md shadow-indigo-950/30 scale-[1.02]'
                                 : 'bg-[#14141c] border-white/10 text-white/70 hover:text-white hover:border-white/20 hover:bg-white/5'
                             }`}
                           >
@@ -1244,7 +1244,7 @@ export const ActorsPage: React.FC = () => {
                             <span
                               className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
                                 isSelected
-                                  ? 'bg-black/25 text-black'
+                                  ? 'bg-black/25 text-white'
                                   : 'bg-white/10 text-white/50'
                               }`}
                             >
@@ -1484,7 +1484,7 @@ export const ActorsPage: React.FC = () => {
                   value={listNameInput}
                   onChange={(e) => setListNameInput(e.target.value)}
                   autoFocus
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none"
                 />
               </div>
 
@@ -1495,7 +1495,7 @@ export const ActorsPage: React.FC = () => {
                   value={listDescInput}
                   onChange={(e) => setListDescInput(e.target.value)}
                   rows={3}
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none resize-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none resize-none"
                 />
               </div>
 
@@ -1510,7 +1510,7 @@ export const ActorsPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting || !listNameInput.trim()}
-                  className="flex-1 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50 cursor-pointer"
+                  className="flex-1 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? 'Criando...' : 'Criar Lista'}
                 </button>
@@ -1526,7 +1526,7 @@ export const ActorsPage: React.FC = () => {
           <div className="bg-[#12121a] border border-white/10 text-white rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <Pencil className="w-5 h-5 text-amber-400" />
+                <Pencil className="w-5 h-5 text-indigo-400" />
                 <h3 className="text-lg font-bold text-white">Editar Lista de Atores</h3>
               </div>
               <button
@@ -1545,7 +1545,7 @@ export const ActorsPage: React.FC = () => {
                   value={listNameInput}
                   onChange={(e) => setListNameInput(e.target.value)}
                   autoFocus
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none"
                 />
               </div>
 
@@ -1555,7 +1555,7 @@ export const ActorsPage: React.FC = () => {
                   value={listDescInput}
                   onChange={(e) => setListDescInput(e.target.value)}
                   rows={3}
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:border-amber-500 focus:outline-none resize-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-3.5 py-2.5 text-xs text-white placeholder:text-white/30 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none resize-none"
                 />
               </div>
 
@@ -1570,7 +1570,7 @@ export const ActorsPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting || !listNameInput.trim()}
-                  className="flex-1 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50 cursor-pointer"
+                  className="flex-1 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
                 </button>

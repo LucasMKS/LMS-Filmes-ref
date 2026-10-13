@@ -162,7 +162,7 @@ export const SerieDetailsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -171,7 +171,7 @@ export const SerieDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen max-w-7xl mx-auto px-4 py-20 text-center">
         <h2 className="text-2xl font-bold text-white">Série não encontrada</h2>
-        <Link to="/series" className="text-amber-400 hover:underline mt-4 inline-block">
+        <Link to="/series" className="text-indigo-400 hover:underline mt-4 inline-block">
           Voltar para o catálogo de séries
         </Link>
       </div>
@@ -250,15 +250,16 @@ export const SerieDetailsPage: React.FC = () => {
 
             {/* User Review Display if already rated */}
             {userRating != null && (
-              <div className="p-4 bg-zinc-900/80 border border-amber-500/30 rounded-2xl shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-bl-full -mr-4 -mt-4 blur-xl" />
+              <div className="p-4 bg-zinc-900/80 border border-indigo-500/25 rounded-2xl shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-bl-full -mr-4 -mt-4 blur-xl" />
                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
                   <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
                     Sua Avaliação
                   </span>
                   <button
+                    type="button"
                     onClick={() => setIsRatingModalOpen(true)}
-                    className="flex items-center gap-1 text-xs text-zinc-400 hover:text-amber-400 font-medium transition-colors cursor-pointer"
+                    className="flex items-center gap-1 text-xs text-zinc-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     Editar
@@ -456,20 +457,22 @@ export const SerieDetailsPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 pt-1">
               {/* Rate button with prominent highlight */}
               <button
+                type="button"
                 onClick={() => setIsRatingModalOpen(true)}
                 className={`flex items-center gap-2 px-5 py-2.5 text-sm rounded-xl transition-all shadow-md cursor-pointer ${
                   userRating
-                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 font-bold shadow-amber-500/15 hover:scale-[1.02]'
-                    : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-zinc-950 font-black shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] active:scale-[0.98]'
+                    ? 'bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 font-semibold shadow-sm hover:scale-[1.02]'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:scale-[1.02] active:scale-[0.98]'
                 }`}
               >
-                <Star className={`w-4 h-4 ${userRating ? 'fill-amber-400 text-amber-400' : 'fill-zinc-950 text-zinc-950'}`} />
+                <Star className={`w-4 h-4 ${userRating ? 'fill-amber-400 text-amber-400' : 'fill-white/80 text-white/80'}`} />
                 <span>{userRating ? `Minha Nota: ${Number(userRating).toFixed(1)}/10` : 'Avaliar Série'}</span>
               </button>
 
               {/* Watch Trailer */}
               {trailer && (
                 <button
+                  type="button"
                   onClick={() => setShowTrailerModal(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-red-600/20 cursor-pointer"
                 >
@@ -480,6 +483,7 @@ export const SerieDetailsPage: React.FC = () => {
 
               {/* Watchlist toggle button */}
               <button
+                type="button"
                 onClick={handleToggleWatchlist}
                 className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all cursor-pointer ${
                   isInWatchlist
@@ -494,6 +498,7 @@ export const SerieDetailsPage: React.FC = () => {
 
               {/* Favorite button */}
               <button
+                type="button"
                 onClick={handleToggleFavorite}
                 className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                   isFavorite
@@ -507,18 +512,20 @@ export const SerieDetailsPage: React.FC = () => {
 
               {/* Add to Custom List */}
               <button
+                type="button"
                 onClick={() => setIsListModalOpen(true)}
                 className="flex items-center gap-1.5 px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
               >
-                <ListPlus className="w-4 h-4 text-amber-400" />
+                <ListPlus className="w-4 h-4 text-indigo-400" />
                 Listas
               </button>
 
               {/* Official Homepage */}
               {serie.homepage && (
                 <button
+                  type="button"
                   onClick={() => window.open(serie.homepage, '_blank')}
-                  className="flex items-center gap-1.5 px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
                   title="Site Oficial"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -550,7 +557,7 @@ export const SerieDetailsPage: React.FC = () => {
             {/* Seasons Section */}
             <div className="pt-4">
               <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                <Layers className="w-5 h-5 text-amber-400" />
+                <Layers className="w-5 h-5 text-indigo-400" />
                 Temporadas ({serie.seasons?.length || 0})
               </h2>
 
@@ -559,7 +566,7 @@ export const SerieDetailsPage: React.FC = () => {
                   <Link
                     key={season.id}
                     to={`/series/${serie.id}/season/${season.season_number}`}
-                    className="group flex gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-amber-500/40 hover:bg-zinc-900 transition-all"
+                    className="group flex gap-4 p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-indigo-500/40 hover:bg-zinc-900 transition-all"
                   >
                     <div className="w-16 h-24 sm:w-20 sm:h-28 flex-shrink-0 rounded-lg overflow-hidden bg-zinc-950">
                       <img
@@ -573,7 +580,7 @@ export const SerieDetailsPage: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1 flex flex-col justify-center">
-                      <h3 className="text-base font-bold text-white group-hover:text-amber-400 transition-colors">
+                      <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors">
                         {season.name}
                       </h3>
                       <p className="text-xs text-zinc-400 mt-1">
@@ -584,7 +591,7 @@ export const SerieDetailsPage: React.FC = () => {
                           Estreia: {new Date(season.air_date).getFullYear()}
                         </p>
                       )}
-                      <span className="text-xs font-semibold text-amber-500 mt-2 flex items-center gap-1">
+                      <span className="text-xs font-semibold text-indigo-400 mt-2 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                         Ver episódios &rarr;
                       </span>
                     </div>
@@ -604,7 +611,7 @@ export const SerieDetailsPage: React.FC = () => {
                       to={`/atores/${actor.id}`}
                       className="flex-shrink-0 w-28 group text-center"
                     >
-                      <div className="w-28 h-36 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 group-hover:border-amber-500/50 transition-colors">
+                      <div className="w-28 h-36 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 group-hover:border-indigo-500/50 transition-colors">
                         <img
                           src={
                             actor.profile_path
@@ -615,7 +622,7 @@ export const SerieDetailsPage: React.FC = () => {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
                       </div>
-                      <p className="text-xs font-semibold text-zinc-200 mt-2 truncate group-hover:text-amber-400">
+                      <p className="text-xs font-semibold text-zinc-200 mt-2 truncate group-hover:text-indigo-300">
                         {actor.name}
                       </p>
                       <p className="text-[11px] text-zinc-500 truncate">{actor.character}</p>

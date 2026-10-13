@@ -322,7 +322,7 @@ export const ListDetailsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -348,7 +348,7 @@ export const ListDetailsPage: React.FC = () => {
             <p className="text-sm text-zinc-400 mb-6">A lista que você tentou acessar não existe ou foi removida.</p>
             <button
               onClick={() => navigate('/listas')}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
             >
               Ver todas as listas
             </button>
@@ -376,7 +376,7 @@ export const ListDetailsPage: React.FC = () => {
             <p className="text-sm text-zinc-400 mb-6">A lista que você tentou acessar não existe ou foi removida.</p>
             <button
               onClick={() => navigate('/listas')}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
             >
               Ver todas as listas
             </button>
@@ -407,7 +407,7 @@ export const ListDetailsPage: React.FC = () => {
         {/* List Header */}
         <div className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-2xl mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-500 uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">
               {isActorList ? <Users className="w-4 h-4" /> : <Film className="w-4 h-4" />}
               {isActorList ? 'Lista de Atores' : 'Lista de Produções'}
             </div>
@@ -640,7 +640,7 @@ export const ListDetailsPage: React.FC = () => {
                       onClick={() => setMinRating(rate.value)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                         minRating === rate.value
-                          ? 'bg-amber-400 text-zinc-950 font-bold shadow-md shadow-amber-400/20'
+                          ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/20'
                           : 'bg-[#14141c] border border-white/10 text-white/60 hover:text-white hover:bg-white/[0.04]'
                       }`}
                     >
@@ -652,7 +652,7 @@ export const ListDetailsPage: React.FC = () => {
                 {/* Ordenação e Limpar */}
                 <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
                   <div className="flex items-center gap-1.5 bg-[#14141c] border border-white/10 px-2.5 py-1 rounded-xl text-xs">
-                    <ArrowUpDown className="w-3.5 h-3.5 text-purple-400" />
+                    <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
                     <span className="text-white/40 font-medium">Ordenar:</span>
                     <select
                       value={sortBy}
@@ -707,7 +707,7 @@ export const ListDetailsPage: React.FC = () => {
                     setSearchQuery('');
                     setTypeFilter('all');
                   }}
-                  className="mt-3 px-3 py-1.5 text-xs font-semibold text-amber-400 hover:underline"
+                  className="mt-3 px-3 py-1.5 text-xs font-semibold text-indigo-400 hover:underline cursor-pointer"
                 >
                   Limpar filtros de busca e nota
                 </button>
@@ -762,7 +762,7 @@ export const ListDetailsPage: React.FC = () => {
                   />
                 </Link>
                 <div className="p-3 flex items-center justify-between">
-                  <Link to={`/atores/${actor.id}`} className="font-semibold text-xs text-zinc-200 hover:text-amber-400 truncate">
+                  <Link to={`/atores/${actor.id}`} className="font-semibold text-xs text-zinc-200 hover:text-indigo-300 truncate">
                     {actor.name}
                   </Link>
                   <button

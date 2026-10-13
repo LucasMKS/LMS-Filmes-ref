@@ -236,15 +236,15 @@ export const FavoritesPage: React.FC = () => {
             <div className="flex items-center bg-[#14141c] p-1 rounded-xl border border-white/[0.06] text-xs">
               <button
                 onClick={() => setActiveTab('movies')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  activeTab === 'movies' ? 'bg-purple-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                  activeTab === 'movies' ? 'bg-indigo-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 <Film className="w-3.5 h-3.5" /> Filmes ({filteredMovies.length})
               </button>
               <button
                 onClick={() => setActiveTab('series')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
                   activeTab === 'series' ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -252,8 +252,8 @@ export const FavoritesPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('actors')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  activeTab === 'actors' ? 'bg-amber-500 text-zinc-950 font-bold' : 'text-zinc-400 hover:text-white'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                  activeTab === 'actors' ? 'bg-blue-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" /> Atores ({filteredActors.length})
@@ -464,7 +464,7 @@ export const FavoritesPage: React.FC = () => {
                       />
                     </Link>
                     <div className="p-3 flex items-center justify-between border-t border-white/[0.05]">
-                      <Link to={`/atores/${actor.id}`} className="font-semibold text-xs text-zinc-200 hover:text-amber-400 truncate">
+                      <Link to={`/atores/${actor.id}`} className="font-semibold text-xs text-zinc-200 hover:text-indigo-300 truncate">
                         {actor.name}
                       </Link>
                       <button

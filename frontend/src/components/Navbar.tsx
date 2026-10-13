@@ -102,13 +102,16 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-                <Film className="w-5 h-5" />
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 group-hover:shadow-indigo-500/30 transition-all duration-200">
+                <Film className="w-4.5 h-4.5" />
               </div>
-              <span className="font-extrabold text-xl tracking-tight text-white group-hover:text-amber-400 transition-colors">
-                LMS<span className="text-amber-500">Filmes</span>
-              </span>
+              <div className="flex flex-col">
+                <span className="font-bold text-lg tracking-tight text-white transition-colors flex items-center gap-1 leading-none">
+                  LMS<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400 font-semibold">Filmes</span>
+                </span>
+                <span className="text-[9px] tracking-wider uppercase text-zinc-500 font-medium leading-none mt-1">Cinema & Séries</span>
+              </div>
             </Link>
 
             {/* Desktop Navigation */}
@@ -120,13 +123,13 @@ export const Navbar: React.FC = () => {
                   <Link
                     key={link.name}
                     to={link.href}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                       active
-                        ? 'bg-zinc-800 text-amber-400 font-semibold'
-                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                        ? 'bg-indigo-500/15 text-indigo-300 font-semibold border border-indigo-500/20 shadow-sm'
+                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
                     }`}
                   >
-                    <link.icon className="w-4 h-4" />
+                    <link.icon className={`w-4 h-4 ${active ? 'text-indigo-400' : 'text-zinc-400'}`} />
                     {link.name}
                   </Link>
                 );
@@ -144,13 +147,13 @@ export const Navbar: React.FC = () => {
                   placeholder="Pesquisar..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-48 lg:w-64 bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-20 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-all"
+                  className="w-48 lg:w-64 bg-zinc-900/90 border border-zinc-800 rounded-xl pl-9 pr-20 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20 transition-all"
                 />
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center bg-zinc-800 rounded px-1 text-[11px] font-semibold text-zinc-400">
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center bg-zinc-800/90 rounded-lg px-1.5 text-[11px] font-semibold text-zinc-400">
                   <button
                     type="button"
                     onClick={() => setSearchType(searchType === 'movie' ? 'serie' : 'movie')}
-                    className="hover:text-amber-400 transition-colors uppercase tracking-wider px-1 py-0.5"
+                    className="hover:text-indigo-300 transition-colors uppercase tracking-wider px-1 py-0.5"
                     title="Alternar entre Filmes e Séries"
                   >
                     {searchType === 'movie' ? 'Filmes' : 'Séries'}
@@ -168,7 +171,7 @@ export const Navbar: React.FC = () => {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/90 hover:bg-zinc-800/90 border border-zinc-800 rounded-xl transition-all duration-200 cursor-pointer shadow-sm group"
                   >
-                    <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform">
                       {user?.name?.[0]?.toUpperCase() || <UserIcon className="w-3.5 h-3.5" />}
                     </div>
                     <span className="text-xs font-semibold text-zinc-200 max-w-[120px] truncate">
@@ -176,14 +179,14 @@ export const Navbar: React.FC = () => {
                     </span>
                     <ChevronDown
                       className={`w-3.5 h-3.5 text-zinc-400 transition-transform duration-200 ${
-                        userMenuOpen ? 'rotate-180 text-amber-400' : ''
+                        userMenuOpen ? 'rotate-180 text-indigo-400' : ''
                       }`}
                     />
                   </button>
 
                   {/* Dropdown Menu */}
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-[#12121a] border border-zinc-800/90 rounded-2xl p-2 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="absolute right-0 mt-2 w-64 bg-[#0e121e] border border-zinc-800/90 rounded-2xl p-2 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                       {/* User Info Header */}
                       <div className="p-3 pb-2.5 border-b border-zinc-800/80 mb-1">
                         <p className="text-xs font-bold text-white truncate">
@@ -205,12 +208,12 @@ export const Navbar: React.FC = () => {
                               onClick={() => setUserMenuOpen(false)}
                               className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                                 active
-                                  ? 'bg-amber-500/10 text-amber-400 font-semibold'
+                                  ? 'bg-indigo-500/15 text-indigo-300 font-semibold border border-indigo-500/20'
                                   : 'text-zinc-300 hover:text-white hover:bg-zinc-800/80'
                               }`}
                             >
                               <div className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800/60 text-zinc-300">
-                                <item.icon className="w-3.5 h-3.5 text-amber-400" />
+                                <item.icon className="w-3.5 h-3.5 text-indigo-400" />
                               </div>
                               <div className="flex flex-col">
                                 <span className="font-semibold text-white/90">{item.name}</span>
@@ -252,13 +255,13 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="px-3 py-1.5 text-sm font-medium text-zinc-300 hover:text-white transition-colors"
+                  className="px-3.5 py-1.5 text-sm font-medium text-zinc-300 hover:text-white transition-colors"
                 >
                   Entrar
                 </Link>
                 <Link
                   to="/cadastro"
-                  className="px-4 py-1.5 text-sm font-semibold text-zinc-950 bg-amber-400 hover:bg-amber-300 rounded-lg shadow-sm transition-all"
+                  className="px-4 py-1.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md shadow-indigo-600/20 transition-all"
                 >
                   Criar Conta
                 </Link>
@@ -287,12 +290,12 @@ export const Navbar: React.FC = () => {
               placeholder={`Buscar ${searchType === 'movie' ? 'filmes' : 'séries'}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80"
             />
             <button
               type="button"
               onClick={() => setSearchType(searchType === 'movie' ? 'serie' : 'movie')}
-              className="px-3 py-2 bg-zinc-800 text-xs font-bold rounded-lg text-amber-400 cursor-pointer"
+              className="px-3 py-2 bg-zinc-800 text-xs font-bold rounded-xl text-indigo-400 cursor-pointer"
             >
               {searchType === 'movie' ? 'FILMES' : 'SÉRIES'}
             </button>
@@ -310,11 +313,11 @@ export const Navbar: React.FC = () => {
                     key={link.name}
                     to={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                      active ? 'bg-zinc-800 text-amber-400' : 'text-zinc-400 hover:bg-zinc-900'
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium ${
+                      active ? 'bg-indigo-500/15 text-indigo-300 font-semibold border border-indigo-500/20' : 'text-zinc-400 hover:bg-zinc-900'
                     }`}
                   >
-                    <link.icon className="w-4 h-4" />
+                    <link.icon className={`w-4 h-4 ${active ? 'text-indigo-400' : 'text-zinc-400'}`} />
                     {link.name}
                   </Link>
                 );
@@ -334,11 +337,11 @@ export const Navbar: React.FC = () => {
                       key={link.name}
                       to={link.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                        active ? 'bg-zinc-800 text-amber-400' : 'text-zinc-400 hover:bg-zinc-900'
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium ${
+                        active ? 'bg-indigo-500/15 text-indigo-300 font-semibold border border-indigo-500/20' : 'text-zinc-400 hover:bg-zinc-900'
                       }`}
                     >
-                      <link.icon className="w-4 h-4 text-amber-400" />
+                      <link.icon className="w-4 h-4 text-indigo-400" />
                       {link.name}
                     </Link>
                   );
@@ -351,7 +354,7 @@ export const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">
+                  <div className="w-7 h-7 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs">
                     {user?.name?.[0]?.toUpperCase()}
                   </div>
                   <span className="text-sm font-medium text-zinc-300">{user?.name}</span>
@@ -372,14 +375,14 @@ export const Navbar: React.FC = () => {
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 text-center py-2 text-sm font-medium text-zinc-300 bg-zinc-900 rounded-lg"
+                  className="flex-1 text-center py-2 text-sm font-medium text-zinc-300 bg-zinc-900 rounded-xl"
                 >
                   Entrar
                 </Link>
                 <Link
                   to="/cadastro"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 text-center py-2 text-sm font-semibold text-zinc-950 bg-amber-400 rounded-lg"
+                  className="flex-1 text-center py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl shadow-md shadow-indigo-600/20"
                 >
                   Criar Conta
                 </Link>

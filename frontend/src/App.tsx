@@ -61,12 +61,13 @@ const Footer: React.FC = () => {
   return (
     <footer className="border-t border-zinc-800 bg-zinc-950/80 py-8 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
             <Film className="w-3.5 h-3.5" />
           </div>
-          <span className="font-semibold text-zinc-300">LMS-Filmes Refatorado</span>
-          <span>— Arquitetura Monolítica Modular de Alta Performance</span>
+          <span className="font-semibold text-zinc-300">LMS<span className="text-indigo-400">Filmes</span></span>
+          <span className="hidden sm:inline text-zinc-600">•</span>
+          <span className="hidden sm:inline">Catálogo e Recomendações de Cinema e Séries</span>
         </div>
         <p className="text-center md:text-right">
           Dados fornecidos via{' '}
@@ -74,7 +75,7 @@ const Footer: React.FC = () => {
             href="https://www.themoviedb.org/"
             target="_blank"
             rel="noreferrer"
-            className="text-amber-500 hover:underline"
+            className="text-indigo-400 hover:text-indigo-300 hover:underline"
           >
             TMDB API
           </a>
