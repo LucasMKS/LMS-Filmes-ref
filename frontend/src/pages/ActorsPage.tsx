@@ -840,12 +840,14 @@ export const ActorsPage: React.FC = () => {
                         return (
                           <div
                             key={person.id}
-                            onClick={() => !isAlreadySelected && handleSelectActor(person)}
-                            className={`flex items-center justify-between p-3 transition-colors cursor-pointer ${
-                              isAlreadySelected
-                                ? 'opacity-50 bg-white/[0.02] cursor-not-allowed'
-                                : 'hover:bg-white/5'
-                            }`}
+                            onClick={() => {
+                              if (isAlreadySelected) {
+                                handleRemoveActor(person.id);
+                              } else {
+                                handleSelectActor(person);
+                              }
+                            }}
+                            className="flex items-center justify-between p-3 transition-colors cursor-pointer hover:bg-white/5"
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <img
@@ -875,11 +877,21 @@ export const ActorsPage: React.FC = () => {
 
                             <div className="shrink-0 ml-3">
                               {isAlreadySelected ? (
-                                <span className="flex items-center gap-1 text-xs text-emerald-400 font-semibold px-2 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                                  <Check className="w-3 h-3" /> Na Lista
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveActor(person.id);
+                                  }}
+                                  className="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Remover
+                                </button>
                               ) : (
-                                <button className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors">
+                                <button
+                                  type="button"
+                                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                >
                                   <Plus className="w-3 h-3" /> Adicionar
                                 </button>
                               )}

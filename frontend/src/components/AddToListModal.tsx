@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Check, ListPlus, FolderPlus } from 'lucide-react';
+import { X, Plus, Trash2, ListPlus, FolderPlus } from 'lucide-react';
 import { customListApi } from '../services/api';
 import { CustomList } from '../types';
 import { toast } from 'sonner';
@@ -32,7 +32,7 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({
   const [newListName, setNewListName] = useState('');
   const [newListDesc, setNewListDesc] = useState('');
   const [creating, setCreating] = useState(false);
-  const [addingToListId, setAddingToListId] = useState<number | null>(null);
+  const [processingListId, setProcessingListId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,10 +80,20 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({
     }
   };
 
+  const isMediaInList = (list: CustomList) => {
+    if (!list.items || !Array.isArray(list.items)) return false;
+    return list.items.some((item) => {
+      const matchId = String(item.mediaId) === String(mediaId);
+      const itemType = (item.mediaType || item.type || '').toLowerCase();
+      const targetType = mediaType.toLowerCase();
+      return matchId && (itemType ? itemType === targetType : true);
+    });
+  };
+
   const handleAddMedia = async (listId: number) => {
-    setAddingToListId(listId);
+    setProcessingListId(listId);
     try {
-      await customListApi.addItem(listId, {
+      const res = await customListApi.addItem(listId, {
         id: mediaId,
         type: mediaType,
         title: mediaTitle,
@@ -93,11 +103,66 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({
         releaseYear,
       });
       toast.success(`"${mediaTitle}" adicionado à lista!`);
-      onClose();
+      if (res.data) {
+        setLists((prev) => prev.map((l) => (l.id === listId ? res.data : l)));
+      } else {
+        setLists((prev) =>
+          prev.map((l) =>
+            l.id === listId
+              ? {
+                  ...l,
+                  items: [
+                    ...(l.items || []),
+                    {
+                      id: Date.now(),
+                      mediaId: String(mediaId),
+                      mediaType,
+                      type: mediaType,
+                      title: mediaTitle,
+                      posterPath,
+                      backdropPath,
+                      voteAverage,
+                      releaseYear,
+                    },
+                  ],
+                }
+              : l
+          )
+        );
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Item já está na lista ou erro ao adicionar');
     } finally {
-      setAddingToListId(null);
+      setProcessingListId(null);
+    }
+  };
+
+  const handleRemoveMedia = async (listId: number) => {
+    setProcessingListId(listId);
+    try {
+      await customListApi.removeItem(listId, mediaId, mediaType);
+      toast.info(`"${mediaTitle}" removido da lista!`);
+      setLists((prev) =>
+        prev.map((l) =>
+          l.id === listId
+            ? {
+                ...l,
+                items: (l.items || []).filter(
+                  (item) =>
+                    !(
+                      String(item.mediaId) === String(mediaId) &&
+                      ((item.mediaType || item.type || '').toLowerCase() === mediaType.toLowerCase() ||
+                        !(item.mediaType || item.type))
+                    )
+                ),
+              }
+            : l
+        )
+      );
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Erro ao remover da lista');
+    } finally {
+      setProcessingListId(null);
     }
   };
 
@@ -131,25 +196,44 @@ export const AddToListModal: React.FC<AddToListModalProps> = ({
             ) : lists.length === 0 ? (
               <p className="text-xs text-zinc-500 text-center py-4">Você ainda não tem listas personalizadas.</p>
             ) : (
-              lists.map((list) => (
-                <div
-                  key={list.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
-                >
-                  <div className="truncate mr-2">
-                    <p className="text-xs font-semibold text-zinc-200 truncate">{list.name}</p>
-                    <p className="text-[10px] text-zinc-500">{list.items?.length || 0} itens</p>
-                  </div>
-                  <button
-                    onClick={() => handleAddMedia(list.id)}
-                    disabled={addingToListId === list.id}
-                    className="flex items-center gap-1 px-3 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-semibold rounded-lg transition-colors border border-indigo-500/30 cursor-pointer"
+              lists.map((list) => {
+                const inList = isMediaInList(list);
+                const isBusy = processingListId === list.id;
+
+                return (
+                  <div
+                    key={list.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    Adicionar
-                  </button>
-                </div>
-              ))
+                    <div className="truncate mr-2">
+                      <p className="text-xs font-semibold text-zinc-200 truncate">{list.name}</p>
+                      <p className="text-[10px] text-zinc-500">{list.items?.length || 0} itens</p>
+                    </div>
+
+                    {inList ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMedia(list.id)}
+                        disabled={isBusy}
+                        className="flex items-center gap-1 px-3 py-1 bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-semibold rounded-lg transition-colors border border-red-500/30 cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Remover
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleAddMedia(list.id)}
+                        disabled={isBusy}
+                        className="flex items-center gap-1 px-3 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-semibold rounded-lg transition-colors border border-indigo-500/30 cursor-pointer disabled:opacity-50"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Adicionar
+                      </button>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Users, FolderPlus } from 'lucide-react';
+import { X, Plus, Trash2, Users, FolderPlus } from 'lucide-react';
 import { actorListApi } from '../services/api';
 import { ActorList } from '../types';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ export const AddActorToListModal: React.FC<AddActorToListModalProps> = ({
   const [newListName, setNewListName] = useState('');
   const [newListDesc, setNewListDesc] = useState('');
   const [creating, setCreating] = useState(false);
-  const [addingToListId, setAddingToListId] = useState<number | null>(null);
+  const [processingListId, setProcessingListId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -74,20 +74,70 @@ export const AddActorToListModal: React.FC<AddActorToListModalProps> = ({
     }
   };
 
+  const isActorInList = (list: ActorList) => {
+    if (!list.items || !Array.isArray(list.items)) return false;
+    return list.items.some((item) => String(item.actorId) === String(actorId));
+  };
+
   const handleAddActor = async (listId: number) => {
-    setAddingToListId(listId);
+    setProcessingListId(listId);
     try {
-      await actorListApi.addActor(listId, actorId, {
+      const res = await actorListApi.addActor(listId, actorId, {
         name: actorName,
         profilePath,
         department,
       });
       toast.success(`"${actorName}" adicionado à lista de atores!`);
-      onClose();
+      if (res.data) {
+        setLists((prev) => prev.map((l) => (l.id === listId ? res.data : l)));
+      } else {
+        setLists((prev) =>
+          prev.map((l) =>
+            l.id === listId
+              ? {
+                  ...l,
+                  items: [
+                    ...(l.items || []),
+                    {
+                      id: Date.now(),
+                      actorId: String(actorId),
+                      name: actorName,
+                      profilePath: profilePath || null,
+                      department,
+                      addedAt: new Date().toISOString(),
+                    },
+                  ],
+                }
+              : l
+          )
+        );
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Ator já está na lista ou erro');
     } finally {
-      setAddingToListId(null);
+      setProcessingListId(null);
+    }
+  };
+
+  const handleRemoveActor = async (listId: number) => {
+    setProcessingListId(listId);
+    try {
+      await actorListApi.removeActor(listId, actorId);
+      toast.info(`"${actorName}" removido da lista de atores!`);
+      setLists((prev) =>
+        prev.map((l) =>
+          l.id === listId
+            ? {
+                ...l,
+                items: (l.items || []).filter((item) => String(item.actorId) !== String(actorId)),
+              }
+            : l
+        )
+      );
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Erro ao remover ator da lista');
+    } finally {
+      setProcessingListId(null);
     }
   };
 
@@ -120,25 +170,44 @@ export const AddActorToListModal: React.FC<AddActorToListModalProps> = ({
             ) : lists.length === 0 ? (
               <p className="text-xs text-zinc-500 text-center py-4">Nenhuma lista de atores criada.</p>
             ) : (
-              lists.map((list) => (
-                <div
-                  key={list.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
-                >
-                  <div className="truncate mr-2">
-                    <p className="text-xs font-semibold text-zinc-200 truncate">{list.name}</p>
-                    <p className="text-[10px] text-zinc-500">{list.items?.length || 0} atores</p>
-                  </div>
-                  <button
-                    onClick={() => handleAddActor(list.id)}
-                    disabled={addingToListId === list.id}
-                    className="flex items-center gap-1 px-3 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-semibold rounded-lg transition-colors border border-indigo-500/30 cursor-pointer"
+              lists.map((list) => {
+                const inList = isActorInList(list);
+                const isBusy = processingListId === list.id;
+
+                return (
+                  <div
+                    key={list.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    Adicionar
-                  </button>
-                </div>
-              ))
+                    <div className="truncate mr-2">
+                      <p className="text-xs font-semibold text-zinc-200 truncate">{list.name}</p>
+                      <p className="text-[10px] text-zinc-500">{list.items?.length || 0} atores</p>
+                    </div>
+
+                    {inList ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveActor(list.id)}
+                        disabled={isBusy}
+                        className="flex items-center gap-1 px-3 py-1 bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-semibold rounded-lg transition-colors border border-red-500/30 cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Remover
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleAddActor(list.id)}
+                        disabled={isBusy}
+                        className="flex items-center gap-1 px-3 py-1 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-semibold rounded-lg transition-colors border border-indigo-500/30 cursor-pointer disabled:opacity-50"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Adicionar
+                      </button>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
 

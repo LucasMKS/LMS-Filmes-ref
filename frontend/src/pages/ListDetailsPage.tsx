@@ -489,11 +489,11 @@ export const ListDetailsPage: React.FC = () => {
                               onClick={() => handleToggleAddActor(result)}
                               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
                                 inList
-                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                  ? 'bg-red-500/15 text-red-400 border border-red-500/20 hover:bg-red-500/25'
                                   : 'bg-purple-600 hover:bg-purple-500 text-white shadow-md'
                               }`}
                             >
-                              {inList ? <><Check className="w-3 h-3 stroke-[3]" /> Adicionado</> : <><Plus className="w-3 h-3" /> Adicionar</>}
+                              {inList ? <><Trash2 className="w-3 h-3" /> Remover</> : <><Plus className="w-3 h-3" /> Adicionar</>}
                             </button>
                           </div>
                         );
@@ -530,11 +530,11 @@ export const ListDetailsPage: React.FC = () => {
                             onClick={() => handleToggleAddMedia(result)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer ${
                               inList
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                ? 'bg-red-500/15 text-red-400 border border-red-500/20 hover:bg-red-500/25'
                                 : 'bg-purple-600 hover:bg-purple-500 text-white shadow-md'
                             }`}
                           >
-                            {inList ? <><Check className="w-3 h-3 stroke-[3]" /> Adicionado</> : <><Plus className="w-3 h-3" /> Adicionar</>}
+                            {inList ? <><Trash2 className="w-3 h-3" /> Remover</> : <><Plus className="w-3 h-3" /> Adicionar</>}
                           </button>
                         </div>
                       );
