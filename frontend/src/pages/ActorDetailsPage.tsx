@@ -303,6 +303,8 @@ export const ActorDetailsPage: React.FC = () => {
         onClose={() => setIsListModalOpen(false)}
         actorId={actorId}
         actorName={actor.name}
+        profilePath={actor.profile_path}
+        department={actor.known_for_department}
       />
     </div>
   );

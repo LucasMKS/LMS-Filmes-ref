@@ -262,7 +262,11 @@ export const ListDetailsPage: React.FC = () => {
       await handleRemoveActorItem(actor.id);
     } else {
       try {
-        await actorListApi.addActor(listId, actor.id);
+        await actorListApi.addActor(listId, actor.id, {
+          name: actor.name,
+          profilePath: actor.profile_path,
+          department: actor.known_for_department,
+        });
         setLoadedActors((prev) => [actor, ...prev]);
         toast.success(`"${actor.name}" adicionado à lista de atores!`);
       } catch {

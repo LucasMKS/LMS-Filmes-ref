@@ -9,6 +9,8 @@ interface AddActorToListModalProps {
   onClose: () => void;
   actorId: number;
   actorName: string;
+  profilePath?: string | null;
+  department?: string;
 }
 
 export const AddActorToListModal: React.FC<AddActorToListModalProps> = ({
@@ -16,6 +18,8 @@ export const AddActorToListModal: React.FC<AddActorToListModalProps> = ({
   onClose,
   actorId,
   actorName,
+  profilePath,
+  department,
 }) => {
   const [lists, setLists] = useState<ActorList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +77,11 @@ export const AddActorToListModal: React.FC<AddActorToListModalProps> = ({
   const handleAddActor = async (listId: number) => {
     setAddingToListId(listId);
     try {
-      await actorListApi.addActor(listId, actorId);
+      await actorListApi.addActor(listId, actorId, {
+        name: actorName,
+        profilePath,
+        department,
+      });
       toast.success(`"${actorName}" adicionado à lista de atores!`);
       onClose();
     } catch (err: any) {

@@ -2,6 +2,7 @@ package com.lucasm.lmsfilmes.modules.favorite.service;
 
 import com.lucasm.lmsfilmes.core.exception.ResourceNotFoundException;
 import com.lucasm.lmsfilmes.modules.auth.service.AuthService;
+import com.lucasm.lmsfilmes.modules.catalog.service.MovieService;
 import com.lucasm.lmsfilmes.modules.favorite.dto.ActorListDTOs;
 import com.lucasm.lmsfilmes.modules.favorite.model.ActorList;
 import com.lucasm.lmsfilmes.modules.favorite.model.ActorListItem;
@@ -22,6 +23,7 @@ public class ActorListService {
     private final ActorListRepository actorListRepository;
     private final ActorListItemRepository actorListItemRepository;
     private final AuthService authService;
+    private final MovieService movieService;
 
     public List<ActorListDTOs.Response> getUserActorLists(String email) {
         Long userId = authService.getUserIdByIdentifier(email);
@@ -92,9 +94,37 @@ public class ActorListService {
                     ActorListItem item = new ActorListItem();
                     item.setActorList(list);
                     item.setActorId(dto.getActorId());
-                    item.setName(dto.getName());
-                    item.setProfilePath(dto.getProfilePath());
-                    item.setDepartment(dto.getDepartment());
+
+                    String name = dto.getName();
+                    String profilePath = dto.getProfilePath();
+                    String department = dto.getDepartment();
+
+                    if ((name == null || name.isBlank()) && dto.getActorId() != null) {
+                        try {
+                            var person = movieService.getPersonDetails(dto.getActorId());
+                            if (person != null) {
+                                if (person.name() != null && !person.name().isBlank()) {
+                                    name = person.name();
+                                }
+                                if (profilePath == null) {
+                                    profilePath = person.profile_path();
+                                }
+                                if (department == null) {
+                                    department = person.known_for_department();
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("Erro ao buscar detalhes da pessoa {} no TMDB: {}", dto.getActorId(), e.getMessage());
+                        }
+                    }
+
+                    if (name == null || name.isBlank()) {
+                        name = "Ator #" + dto.getActorId();
+                    }
+
+                    item.setName(name);
+                    item.setProfilePath(profilePath);
+                    item.setDepartment(department);
                     return actorListItemRepository.save(item);
                 });
 
