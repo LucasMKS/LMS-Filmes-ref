@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { favoriteApi, movieApi, serieApi, actorApi } from '../services/api';
-import { TmdbMovie, TmdbSerie, TmdbPerson } from '../types';
+import { favoriteApi, movieApi, serieApi } from '../services/api';
+import { TmdbMovie, TmdbSerie } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { useUserRatingsStore } from '../store/useUserRatingsStore';
-import { Heart, Film, Tv, Users, Trash2, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
+import { Heart, Film, Tv, Trash2, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const FavoritesPage: React.FC = () => {
   const { movieRatings, serieRatings } = useUserRatingsStore();
-  const [activeTab, setActiveTab] = useState<'movies' | 'series' | 'actors'>('movies');
+  const [activeTab, setActiveTab] = useState<'movies' | 'series'>('movies');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleLimit, setVisibleLimit] = useState(24);
   const [favoriteMovies, setFavoriteMovies] = useState<TmdbMovie[]>(() => {
@@ -23,14 +23,6 @@ export const FavoritesPage: React.FC = () => {
   const [favoriteSeries, setFavoriteSeries] = useState<TmdbSerie[]>(() => {
     try {
       const c = sessionStorage.getItem('lms_fav_cached_series');
-      return c ? JSON.parse(c) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [favoriteActors, setFavoriteActors] = useState<TmdbPerson[]>(() => {
-    try {
-      const c = sessionStorage.getItem('lms_fav_cached_actors');
       return c ? JSON.parse(c) : [];
     } catch {
       return [];
@@ -67,32 +59,21 @@ export const FavoritesPage: React.FC = () => {
 
   const loadFavorites = async () => {
     try {
-      const [moviesRes, seriesRes, actorsRes] = await Promise.all([
+      const [moviesRes, seriesRes] = await Promise.all([
         favoriteApi.getUserMovies(),
         favoriteApi.getUserSeries(),
-        favoriteApi.getUserActors(),
       ]);
 
       const movieIds = (moviesRes.data || []).map((f: any) => f.movieId || f.id).filter(Boolean);
       const serieIds = (seriesRes.data || []).map((s: any) => s.serieId || s.id).filter(Boolean);
 
-      const [moviesBatchRes, seriesBatchRes, loadedActors] = await Promise.all([
+      const [moviesBatchRes, seriesBatchRes] = await Promise.all([
         movieIds.length
           ? movieApi.getBatch(movieIds).catch(() => ({ data: {} as Record<string, TmdbMovie> }))
           : Promise.resolve({ data: {} as Record<string, TmdbMovie> }),
         serieIds.length
           ? serieApi.getBatch(serieIds).catch(() => ({ data: {} as Record<string, TmdbSerie> }))
           : Promise.resolve({ data: {} as Record<string, TmdbSerie> }),
-        Promise.all(
-          (actorsRes.data || []).map(async (f: any) => {
-            try {
-              const a = await actorApi.getDetails(f.actorId || f.id);
-              return a.data;
-            } catch {
-              return null;
-            }
-          })
-        ),
       ]);
 
       const moviesBatch = moviesBatchRes.data || {};
@@ -139,31 +120,17 @@ export const FavoritesPage: React.FC = () => {
         })
         .filter(Boolean) as TmdbSerie[];
 
-      const validActors = loadedActors.filter(Boolean) as TmdbPerson[];
-
       setFavoriteMovies(loadedMovies);
       setFavoriteSeries(loadedSeries);
-      setFavoriteActors(validActors);
 
       try {
         sessionStorage.setItem('lms_fav_cached_movies', JSON.stringify(loadedMovies));
         sessionStorage.setItem('lms_fav_cached_series', JSON.stringify(loadedSeries));
-        sessionStorage.setItem('lms_fav_cached_actors', JSON.stringify(validActors));
       } catch {}
     } catch {
       toast.error('Erro ao carregar favoritos');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleRemoveActor = async (actorId: number) => {
-    try {
-      await favoriteApi.removeActor(actorId);
-      setFavoriteActors((prev) => prev.filter((a) => a.id !== actorId));
-      toast.info('Ator removido dos favoritos');
-    } catch {
-      toast.error('Erro ao remover ator');
     }
   };
 
@@ -179,15 +146,9 @@ export const FavoritesPage: React.FC = () => {
     return (serie.name || '').toLowerCase().includes(q);
   });
 
-  const filteredActors = favoriteActors.filter((actor) => {
-    if (!q) return true;
-    return (actor.name || '').toLowerCase().includes(q);
-  });
-
   const getCurrentList = () => {
     if (activeTab === 'movies') return filteredMovies;
-    if (activeTab === 'series') return filteredSeries;
-    return filteredActors;
+    return filteredSeries;
   };
 
   const currentList = getCurrentList();
@@ -205,7 +166,7 @@ export const FavoritesPage: React.FC = () => {
                 Meus Favoritos
               </h1>
               <p className="text-xs text-zinc-400 mt-1">
-                Todos os seus filmes, séries e atores favoritos em um só lugar
+                Todos os seus filmes e séries favoritos em um só lugar
               </p>
             </div>
 
@@ -250,18 +211,9 @@ export const FavoritesPage: React.FC = () => {
               >
                 <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
               </button>
-              <button
-                onClick={() => setActiveTab('actors')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-                  activeTab === 'actors' ? 'bg-blue-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" /> Atores ({filteredActors.length})
-              </button>
             </div>
 
-            {/* Layout Toggle (Desktop - apenas quando não estiver em Atores) */}
-            {activeTab !== 'actors' && (
+            {/* Layout Toggle (Desktop) */}
               <div className="hidden lg:flex items-center gap-1 bg-[#14141c] p-1 rounded-xl border border-white/[0.06]">
                 <button
                   onClick={() => handleViewModeChange('split')}
@@ -288,7 +240,6 @@ export const FavoritesPage: React.FC = () => {
                   <span>Grid Padrão</span>
                 </button>
               </div>
-            )}
           </div>
         </div>
 
@@ -296,7 +247,7 @@ export const FavoritesPage: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : viewMode === 'split' && activeTab !== 'actors' ? (
+        ) : viewMode === 'split' ? (
           /* MODO LADO A LADO (FILMES X SÉRIES) */
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Coluna Filmes */}
@@ -396,7 +347,6 @@ export const FavoritesPage: React.FC = () => {
           <div className="text-center py-20 bg-[#14141c]/40 rounded-2xl border border-white/[0.06]">
             {activeTab === 'movies' && <Film className="w-12 h-12 text-zinc-600 mx-auto mb-3" />}
             {activeTab === 'series' && <Tv className="w-12 h-12 text-zinc-600 mx-auto mb-3" />}
-            {activeTab === 'actors' && <Users className="w-12 h-12 text-zinc-600 mx-auto mb-3" />}
             <h3 className="text-lg font-bold text-zinc-300">
               {searchQuery ? `Nenhum resultado para "${searchQuery}"` : 'Nenhum favorito encontrado nesta categoria'}
             </h3>
@@ -441,41 +391,6 @@ export const FavoritesPage: React.FC = () => {
                       if (!isFav) setFavoriteSeries((prev) => prev.filter((s) => s.id !== id));
                     }}
                   />
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'actors' && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {(visibleList as TmdbPerson[]).map((actor) => (
-                  <div
-                    key={actor.id}
-                    className="group relative flex flex-col rounded-2xl overflow-hidden bg-[#14141c] border border-white/[0.06] hover:border-purple-500/20 hover:-translate-y-1.5 transition-all duration-300 shadow-xl"
-                  >
-                    <Link to={`/atores/${actor.id}`} className="aspect-[2/3] w-full overflow-hidden bg-white/5">
-                      <img
-                        src={
-                          actor.profile_path
-                            ? `https://image.tmdb.org/t/p/w300${actor.profile_path}`
-                            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300'
-                        }
-                        alt={actor.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </Link>
-                    <div className="p-3 flex items-center justify-between border-t border-white/[0.05]">
-                      <Link to={`/atores/${actor.id}`} className="font-semibold text-xs text-zinc-200 hover:text-indigo-300 truncate">
-                        {actor.name}
-                      </Link>
-                      <button
-                        onClick={() => handleRemoveActor(actor.id)}
-                        className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
-                        title="Remover ator favorito"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
                 ))}
               </div>
             )}

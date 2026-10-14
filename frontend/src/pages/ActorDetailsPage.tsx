@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { actorApi, favoriteApi } from '../services/api';
+import { actorApi } from '../services/api';
 import { TmdbPersonDetail, TmdbPersonCredits } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { AddActorToListModal } from '../components/AddActorToListModal';
@@ -8,7 +8,6 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useUserRatingsStore } from '../store/useUserRatingsStore';
 import { 
   ArrowLeft, 
-  Heart, 
   Calendar, 
   MapPin, 
   ListPlus, 
@@ -29,7 +28,6 @@ export const ActorDetailsPage: React.FC = () => {
   const [actor, setActor] = useState<TmdbPersonDetail | null>(null);
   const [credits, setCredits] = useState<TmdbPersonCredits | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [creditType, setCreditType] = useState<'all' | 'movie' | 'tv'>('all');
   const [visibleCount, setVisibleCount] = useState<number>(24);
@@ -42,12 +40,9 @@ export const ActorDetailsPage: React.FC = () => {
   useEffect(() => {
     if (actorId) {
       loadActor();
-      if (isAuthenticated) {
-        checkFavorite();
-      }
     }
     window.scrollTo(0, 0);
-  }, [actorId, isAuthenticated]);
+  }, [actorId]);
 
   const loadActor = async () => {
     setLoading(true);
@@ -62,35 +57,6 @@ export const ActorDetailsPage: React.FC = () => {
       toast.error('Erro ao carregar detalhes do ator');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkFavorite = async () => {
-    try {
-      const res = await favoriteApi.checkActor(actorId);
-      setIsFavorite(res.data.isFavorite);
-    } catch (err) {
-      // Non-blocking
-    }
-  };
-
-  const handleToggleFavorite = async () => {
-    if (!isAuthenticated) {
-      toast.error('Faça login para favoritar');
-      return;
-    }
-    try {
-      if (isFavorite) {
-        await favoriteApi.removeActor(actorId);
-        setIsFavorite(false);
-        toast.info('Ator removido dos favoritos');
-      } else {
-        await favoriteApi.addActor(actorId);
-        setIsFavorite(true);
-        toast.success('Ator adicionado aos favoritos!');
-      }
-    } catch (err) {
-      toast.error('Erro ao atualizar favorito');
     }
   };
 
@@ -180,23 +146,11 @@ export const ActorDetailsPage: React.FC = () => {
             {/* Actions */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
-                onClick={handleToggleFavorite}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                  isFavorite
-                    ? 'bg-red-500/20 border-red-500/50 text-red-500'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800'
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500' : ''}`} />
-                {isFavorite ? 'Ator Favorito' : 'Favoritar Ator'}
-              </button>
-
-              <button
                 onClick={() => setIsListModalOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition-all hover:scale-[1.02] cursor-pointer"
               >
-                <ListPlus className="w-4 h-4 text-indigo-400" />
-                Listas de Atores
+                <ListPlus className="w-4 h-4" />
+                Adicionar às Minhas Listas
               </button>
             </div>
 
