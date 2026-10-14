@@ -106,7 +106,7 @@ export const ActorDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen max-w-7xl mx-auto px-4 py-20 text-center">
         <h2 className="text-2xl font-bold text-white">Ator não encontrado</h2>
-        <Link to="/atores" className="text-indigo-400 hover:underline mt-4 inline-block">
+        <Link to="/listas/atores" className="text-indigo-400 hover:underline mt-4 inline-block">
           Voltar para a lista de atores
         </Link>
       </div>
@@ -129,7 +129,7 @@ export const ActorDetailsPage: React.FC = () => {
             if (window.history.length > 1) {
               navigate(-1);
             } else {
-              navigate('/atores');
+              navigate('/listas/atores');
             }
           }}
           className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors mb-6 cursor-pointer"

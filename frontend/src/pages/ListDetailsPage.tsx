@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { customListApi, actorListApi, movieApi, serieApi, actorApi } from '../services/api';
 import { CustomList, ActorList, TmdbMovie, TmdbSerie, TmdbPerson } from '../types';
 import { MediaCard } from '../components/MediaCard';
@@ -29,6 +29,11 @@ export const ListDetailsPage: React.FC = () => {
   const location = useLocation();
   const listId = Number(id);
   const isActorList = location.pathname.includes('/atores/');
+
+  if (isActorList) {
+    return <Navigate to={`/listas/atores/${id}`} replace />;
+  }
+
   const { movieRatings, serieRatings } = useUserRatingsStore();
 
   const [mediaList, setMediaList] = useState<CustomList | null>(null);

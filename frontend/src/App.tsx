@@ -119,7 +119,7 @@ export const App: React.FC = () => {
               <Route path="/series" element={<SeriesPage />} />
               <Route path="/series/:id" element={<SerieDetailsPage />} />
               <Route path="/series/:id/season/:seasonNumber" element={<SeasonDetailsPage />} />
-              <Route path="/atores" element={<ActorsPage />} />
+              <Route path="/atores" element={<Navigate to="/listas/atores" replace />} />
               <Route path="/atores/:id" element={<ActorDetailsPage />} />
 
               {/* Protected User Routes */}
@@ -164,10 +164,18 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="/listas/atores"
+                element={
+                  <ProtectedRoute>
+                    <ActorsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/listas/atores/:id"
                 element={
                   <ProtectedRoute>
-                    <ListDetailsPage />
+                    <ActorsPage />
                   </ProtectedRoute>
                 }
               />

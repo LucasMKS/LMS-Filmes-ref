@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { actorApi, actorListApi } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUserRatingsStore } from '../store/useUserRatingsStore';
@@ -29,11 +29,12 @@ import {
   FolderHeart,
   ChevronDown,
   ChevronUp,
-  LayoutGrid,
-  Layers,
-  Filter,
   Tag,
   SlidersHorizontal,
+  Dices,
+  Star,
+  ArrowLeft,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -87,7 +88,77 @@ interface AggregatedMediaItem extends TmdbCreditItem {
   popularity?: number;
 }
 
+// Filtro robusto para identificar e remover Talk Shows e programas de entrevistas
+export const isTalkShow = (item: any): boolean => {
+  // TMDB genre ID 10767 = 'Talk' / 'Talk Show', 10763 = 'News'
+  if (item.genre_ids && Array.isArray(item.genre_ids)) {
+    if (item.genre_ids.includes(10767) || item.genre_ids.includes(10763)) {
+      return true;
+    }
+  }
+  if (item.genres && Array.isArray(item.genres)) {
+    if (item.genres.some((g: any) => g.id === 10767 || g.id === 10763 || /talk/i.test(g.name))) {
+      return true;
+    }
+  }
+
+  const title = (item.title || item.name || '').toLowerCase();
+  const character = (item.character || '').toLowerCase();
+
+  const talkKeywords = [
+    'talk show',
+    'tonight show',
+    'late show',
+    'late night with',
+    'jimmy kimmel',
+    'jimmy fallon',
+    'stephen colbert',
+    'graham norton',
+    'james corden',
+    'seth meyers',
+    'conan',
+    'the daily show',
+    'ellen degeneres',
+    'the ellen show',
+    'kelly clarkson show',
+    'live with kelly',
+    'good morning america',
+    'today show',
+    'the view',
+    'watch what happens live',
+    'the talk',
+    'chelsea lately',
+    'last call with',
+    'real time with bill maher',
+    'last week tonight',
+    'saturday night live',
+  ];
+
+  if (talkKeywords.some((kw) => title.includes(kw))) {
+    return true;
+  }
+
+  // Se for programa de TV e o ator interpreta a si mesmo (Self, Himself, Herself, Guest)
+  const isTv = item.media_type === 'tv' || Boolean(item.first_air_date);
+  if (isTv) {
+    if (
+      character === 'self' ||
+      character === 'himself' ||
+      character === 'herself' ||
+      character.startsWith('self -') ||
+      character.startsWith('guest -') ||
+      character === 'guest' ||
+      character === 'convidado'
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 export const ActorsPage: React.FC = () => {
+  const { id: paramListId } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated } = useAuthStore();
@@ -96,9 +167,13 @@ export const ActorsPage: React.FC = () => {
   // Modo Principal: 'my_lists' (Listas de Atores) ou 'explore' (Catálogo TMDB)
   const [mainView, setMainView] = useState<'my_lists' | 'explore'>('my_lists');
 
+  // Modo de Exibição dentro da lista: 'productions' (Filmes & Séries) ou 'actors_simple' (Atores Simplificado)
+  const [displayMode, setDisplayMode] = useState<'productions' | 'actors_simple'>('productions');
+  const [simpleActorSearch, setSimpleActorSearch] = useState('');
+
   // --- ESTADO PARA LISTAS DE ATORES ---
   const [actorLists, setActorLists] = useState<ActorList[]>([]);
-  const [selectedListId, setSelectedListId] = useState<number | null>(null);
+  const [selectedListId, setSelectedListId] = useState<number | null>(paramListId ? Number(paramListId) : null);
   const [isLoadingLists, setIsLoadingLists] = useState(true);
 
   // Modais de Criação, Edição e Exclusão
@@ -108,6 +183,11 @@ export const ActorsPage: React.FC = () => {
   const [listNameInput, setListNameInput] = useState('');
   const [listDescInput, setListDescInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modal Escolher Aleatório
+  const [isRandomModalOpen, setIsRandomModalOpen] = useState(false);
+  const [randomItem, setRandomItem] = useState<AggregatedMediaItem | null>(null);
+  const [isRollingDice, setIsRollingDice] = useState(false);
 
   // Busca e Autocomplete de Atores para Adicionar
   const [actorSearchQuery, setActorSearchQuery] = useState('');
@@ -123,12 +203,12 @@ export const ActorsPage: React.FC = () => {
   // Filtros e Visualização das Recomendações
   const [activeTab, setActiveTab] = useState<RecommendationTab>('recommended');
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeOption>('all');
+  const [minRating, setMinRating] = useState<number>(0);
   const [titleFilter, setTitleFilter] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'by_actor'>('grid');
   const [visibleCount, setVisibleCount] = useState(18);
 
-  // Gestão Visual dos Atores da Lista Ativa (para quando houver muitos nomes)
+  // Gestão Visual dos Atores da Lista Ativa (compacto / expandido)
   const [isActorsExpanded, setIsActorsExpanded] = useState(false);
   const [actorSearchInList, setActorSearchInList] = useState('');
   const [actorDensityMode, setActorDensityMode] = useState<'normal' | 'compact'>('normal');
@@ -140,6 +220,13 @@ export const ActorsPage: React.FC = () => {
   const [catalogPage, setCatalogPage] = useState(1);
   const [catalogTotalPages, setCatalogTotalPages] = useState(1);
   const [catalogSearchInput, setCatalogSearchInput] = useState(catalogQuery);
+
+  // Sincroniza selectedListId caso o parâmetro na URL mude
+  useEffect(() => {
+    if (paramListId) {
+      setSelectedListId(Number(paramListId));
+    }
+  }, [paramListId]);
 
   // Fecha o dropdown de busca ao clicar fora
   useEffect(() => {
@@ -168,14 +255,28 @@ export const ActorsPage: React.FC = () => {
       const res = await actorListApi.getUserLists();
       const lists = res.data || [];
       setActorLists(lists);
-      if (lists.length > 0 && !selectedListId) {
+      if (paramListId) {
+        const found = lists.find((l) => l.id === Number(paramListId));
+        if (found) {
+          setSelectedListId(found.id);
+        } else if (lists.length > 0) {
+          setSelectedListId(lists[0].id);
+          navigate(`/listas/atores/${lists[0].id}`, { replace: true });
+        }
+      } else if (lists.length > 0 && !selectedListId) {
         setSelectedListId(lists[0].id);
+        navigate(`/listas/atores/${lists[0].id}`, { replace: true });
       }
     } catch (err) {
       console.error('Erro ao buscar listas de atores:', err);
     } finally {
       setIsLoadingLists(false);
     }
+  };
+
+  const handleSelectList = (listId: number) => {
+    setSelectedListId(listId);
+    navigate(`/listas/atores/${listId}`);
   };
 
   // Lista Ativa Selecionada
@@ -198,6 +299,13 @@ export const ActorsPage: React.FC = () => {
       known_for_department: item.department || 'Atuação',
     }));
   }, [activeList]);
+
+  // Atores filtrados no modo simplificado
+  const simplifiedActors = useMemo(() => {
+    if (!simpleActorSearch.trim()) return selectedActors;
+    const q = simpleActorSearch.toLowerCase().trim();
+    return selectedActors.filter((a) => a.name.toLowerCase().includes(q));
+  }, [selectedActors, simpleActorSearch]);
 
   // Carrega créditos para cada ator da lista ativa que ainda não esteja em cache
   useEffect(() => {
@@ -315,6 +423,7 @@ export const ActorsPage: React.FC = () => {
       });
       setActorLists([res.data, ...actorLists]);
       setSelectedListId(res.data.id);
+      navigate(`/listas/atores/${res.data.id}`);
       setIsCreateModalOpen(false);
       setListNameInput('');
       setListDescInput('');
@@ -356,7 +465,13 @@ export const ActorsPage: React.FC = () => {
       await actorListApi.deleteList(activeList.id);
       const remaining = actorLists.filter((l) => l.id !== activeList.id);
       setActorLists(remaining);
-      setSelectedListId(remaining.length > 0 ? remaining[0].id : null);
+      const nextId = remaining.length > 0 ? remaining[0].id : null;
+      setSelectedListId(nextId);
+      if (nextId) {
+        navigate(`/listas/atores/${nextId}`);
+      } else {
+        navigate('/listas');
+      }
       setIsDeleteListModalOpen(false);
       toast.success(`Lista "${activeList.name}" excluída.`);
     } catch {
@@ -385,6 +500,7 @@ export const ActorsPage: React.FC = () => {
   };
 
   // AGGREGAÇÃO INTELIGENTE DE MÍDIA (FILMES + SÉRIES COM PONTUAÇÃO E CROSSOVER)
+  // Talkshows são totalmente desconsiderados conforme solicitado
   const aggregatedMedia = useMemo(() => {
     if (selectedActors.length === 0) return [];
 
@@ -393,6 +509,9 @@ export const ActorsPage: React.FC = () => {
     selectedActors.forEach((actor) => {
       const items = actorCreditsMap[actor.id] || [];
       items.forEach((item) => {
+        // Exclui Talk Shows completamente
+        if (isTalkShow(item)) return;
+
         const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
         const key = `${mediaType}_${item.id}`;
         const existing = mediaMap.get(key);
@@ -456,7 +575,7 @@ export const ActorsPage: React.FC = () => {
     return [MOVIE_CATEGORIES[0], ...withCount, ...withoutCount];
   }, [categoryCounts]);
 
-  // Atores visíveis na lista ativa (com suporte a busca e colapso para não crescer desordenadamente)
+  // Atores visíveis no strip compacto da lista ativa
   const displayedActors = useMemo(() => {
     let list = selectedActors;
     if (actorSearchInList.trim()) {
@@ -472,14 +591,18 @@ export const ActorsPage: React.FC = () => {
   // Reset de paginação ao alternar qualquer filtro
   useEffect(() => {
     setVisibleCount(18);
-  }, [activeTab, mediaTypeFilter, selectedCategory, titleFilter, selectedListId]);
+  }, [activeTab, mediaTypeFilter, selectedCategory, titleFilter, minRating, selectedListId]);
 
-  // Filtragem e Ordenação
+  // Filtragem e Ordenação dos Títulos
   const filteredAndSortedMedia = useMemo(() => {
     let result = aggregatedMedia;
 
     if (mediaTypeFilter !== 'all') {
       result = result.filter((m) => m.media_type === mediaTypeFilter);
+    }
+
+    if (minRating > 0) {
+      result = result.filter((m) => (m.vote_average || 0) >= minRating);
     }
 
     if (selectedCategory !== 'all') {
@@ -534,11 +657,42 @@ export const ActorsPage: React.FC = () => {
     }
 
     return copy;
-  }, [aggregatedMedia, mediaTypeFilter, selectedCategory, titleFilter, activeTab]);
+  }, [aggregatedMedia, mediaTypeFilter, selectedCategory, titleFilter, minRating, activeTab]);
 
   const visibleMediaItems = useMemo(() => {
     return filteredAndSortedMedia.slice(0, visibleCount);
   }, [filteredAndSortedMedia, visibleCount]);
+
+  // Escolher Aleatório (Sorteio)
+  const handlePickRandom = () => {
+    if (filteredAndSortedMedia.length === 0) {
+      toast.error('Nenhum título disponível com os filtros atuais para sortear.');
+      return;
+    }
+    setIsRollingDice(true);
+    setTimeout(() => {
+      const randomIndex = Math.floor(Math.random() * filteredAndSortedMedia.length);
+      setRandomItem(filteredAndSortedMedia[randomIndex]);
+      setIsRandomModalOpen(true);
+      setIsRollingDice(false);
+    }, 200);
+  };
+
+  const handleReroll = () => {
+    if (filteredAndSortedMedia.length <= 1) {
+      toast.info('Só há este título com os filtros atuais.');
+      return;
+    }
+    setIsRollingDice(true);
+    setTimeout(() => {
+      let nextIndex = Math.floor(Math.random() * filteredAndSortedMedia.length);
+      if (randomItem && filteredAndSortedMedia[nextIndex].id === randomItem.id && filteredAndSortedMedia.length > 1) {
+        nextIndex = (nextIndex + 1) % filteredAndSortedMedia.length;
+      }
+      setRandomItem(filteredAndSortedMedia[nextIndex]);
+      setIsRollingDice(false);
+    }, 250);
+  };
 
   // --- CARREGAMENTO DO MODO EXPLORAR CATÁLOGO ---
   useEffect(() => {
@@ -579,9 +733,21 @@ export const ActorsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-purple-500/30 pb-20">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* CABEÇALHO */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 border-b border-white/[0.06]">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+        {/* NAVEGAÇÃO DE VOLTA */}
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => navigate('/listas')}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Minhas Listas
+          </button>
+        </div>
+
+        {/* CABEÇALHO DA PÁGINA */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
           <div>
             <div className="flex items-center gap-3">
               <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-2xl">
@@ -589,10 +755,10 @@ export const ActorsPage: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  Atores & Recomendações
+                  Listas de Atores & Obras
                 </h1>
                 <p className="text-sm text-white/50 font-medium mt-0.5">
-                  Organize listas de atores e atrizes para obter recomendações personalizadas e crossovers exclusivos.
+                  Organize seus atores favoritos, explore filmes e séries e descubra crossovers exclusivos.
                 </p>
               </div>
             </div>
@@ -642,10 +808,10 @@ export const ActorsPage: React.FC = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* MODO 1: MINHAS LISTAS DE ATORES & RECOMENDAÇÕES (Fiel ao LMS-Filmes Antigo) */}
+        {/* MODO 1: MINHAS LISTAS DE ATORES & RECOMENDAÇÕES */}
         {/* ========================================================================= */}
         {mainView === 'my_lists' && (
-          <div className="mt-8 space-y-6">
+          <div className="mt-6 space-y-6">
             {!isAuthenticated ? (
               <div className="text-center py-20 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 space-y-4 max-w-xl mx-auto">
                 <Users className="w-12 h-12 text-indigo-400/60 mx-auto" />
@@ -705,7 +871,7 @@ export const ActorsPage: React.FC = () => {
                       return (
                         <button
                           key={list.id}
-                          onClick={() => setSelectedListId(list.id)}
+                          onClick={() => handleSelectList(list.id)}
                           className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 border cursor-pointer ${
                             isSelected
                               ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 shadow-md shadow-indigo-950/30 font-bold scale-[1.02]'
@@ -794,582 +960,926 @@ export const ActorsPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* BARRA DE PESQUISA DE ATORES PARA A LISTA ATIVA */}
-                <div className="relative z-30" ref={searchContainerRef}>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
-                      {isSearchingActor ? (
-                        <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
-                      ) : (
-                        <Search className="w-4 h-4 text-white/40" />
-                      )}
-                    </div>
+                {/* ========================================================================= */}
+                {/* BARRA DE NAVEGAÇÃO DE MODOS: FILMES & SÉRIES VS ATORES (SIMPLIFICADO) */}
+                {/* ========================================================================= */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2 rounded-2xl bg-[#14141c]/90 border border-white/10 backdrop-blur-xl shadow-xl">
+                  {/* Segmented View Mode Tabs */}
+                  <div className="flex items-center p-1 rounded-xl bg-black/40 border border-white/5 w-full sm:w-auto">
+                    <button
+                      onClick={() => setDisplayMode('productions')}
+                      className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                        displayMode === 'productions'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'
+                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Film className="w-4 h-4" />
+                      <span>Filmes & Séries</span>
+                      <span className="px-2 py-0.5 text-[10px] rounded-full bg-black/30 text-white font-bold">
+                        {filteredAndSortedMedia.length}
+                      </span>
+                    </button>
 
-                    <input
-                      type="text"
-                      value={actorSearchQuery}
-                      onChange={(e) => setActorSearchQuery(e.target.value)}
-                      onFocus={() => actorSearchQuery.trim() && setIsSearchDropdownOpen(true)}
-                      placeholder={`Adicionar ator ou atriz em "${activeList?.name || 'Lista'}" (ex: Bryan Cranston, Zendaya, Wagner Moura)...`}
-                      className="w-full pl-11 pr-10 py-3 h-12 bg-[#14141c] border border-white/10 hover:border-white/20 focus:border-indigo-500/70 focus:ring-1 focus:ring-indigo-500/20 rounded-2xl text-white placeholder:text-white/30 text-sm shadow-xl backdrop-blur-xl transition-all focus:outline-none"
-                    />
-
-                    {actorSearchQuery && (
-                      <button
-                        onClick={() => {
-                          setActorSearchQuery('');
-                          setActorSearchResults([]);
-                          setIsSearchDropdownOpen(false);
-                        }}
-                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-white/40 hover:text-white cursor-pointer"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setDisplayMode('actors_simple')}
+                      className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                        displayMode === 'actors_simple'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'
+                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Atores na Lista</span>
+                      <span className="px-2 py-0.5 text-[10px] rounded-full bg-black/30 text-white font-bold">
+                        {selectedActors.length}
+                      </span>
+                      <span className="text-[10px] text-white/40 hidden md:inline font-normal">
+                        • Simplificado
+                      </span>
+                    </button>
                   </div>
 
-                  {/* DROPDOWN AUTOCOMPLETE */}
-                  {isSearchDropdownOpen && actorSearchResults.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#14141c]/98 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-2xl overflow-hidden z-50 divide-y divide-white/5 max-h-[340px] overflow-y-auto">
-                      {actorSearchResults.map((person) => {
-                        const isAlreadySelected = selectedActors.some((a) => a.id === person.id);
-                        const avatarUrl = person.profile_path
-                          ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
-                          : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=185';
-
-                        return (
-                          <div
-                            key={person.id}
-                            onClick={() => {
-                              if (isAlreadySelected) {
-                                handleRemoveActor(person.id);
-                              } else {
-                                handleSelectActor(person);
-                              }
-                            }}
-                            className="flex items-center justify-between p-3 transition-colors cursor-pointer hover:bg-white/5"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <img
-                                src={avatarUrl}
-                                alt={person.name}
-                                className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/10 bg-white/5"
-                              />
-
-                              <div className="flex flex-col text-left min-w-0">
-                                <span className="text-sm font-bold text-white truncate">{person.name}</span>
-                                {person.known_for && person.known_for.length > 0 ? (
-                                  <span className="text-xs text-white/40 truncate">
-                                    Conhecido por:{' '}
-                                    {person.known_for
-                                      .map((m: any) => m.title || m.name)
-                                      .filter(Boolean)
-                                      .slice(0, 2)
-                                      .join(', ')}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-white/40">
-                                    {person.known_for_department || 'Atuação'}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="shrink-0 ml-3">
-                              {isAlreadySelected ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveActor(person.id);
-                                  }}
-                                  className="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
-                                >
-                                  <Trash2 className="w-3 h-3" /> Remover
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
-                                >
-                                  <Plus className="w-3 h-3" /> Adicionar
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                  {/* Botão Escolher Aleatório (quando no modo produções) */}
+                  {displayMode === 'productions' && selectedActors.length > 0 && (
+                    <button
+                      onClick={handlePickRandom}
+                      disabled={filteredAndSortedMedia.length === 0}
+                      className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                    >
+                      <Dices className={`w-4 h-4 stroke-[2.5] ${isRollingDice ? 'animate-spin' : ''}`} />
+                      <span>Escolher Aleatório</span>
+                    </button>
                   )}
                 </div>
 
-                {/* SUGESTÕES RÁPIDAS DE ATORES */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
-                  <span className="text-xs text-white/30 font-medium shrink-0 flex items-center gap-1 mr-1">
-                    <Sparkles className="w-3 h-3 text-indigo-400" /> Sugestões Populares:
-                  </span>
-                  {POPULAR_SUGGESTIONS.map((actor) => {
-                    const isSelected = selectedActors.some((a) => a.id === actor.id);
-                    return (
-                      <button
-                        key={actor.id}
-                        onClick={() =>
-                          !isSelected
-                            ? handleSelectActor(actor as unknown as TmdbPerson)
-                            : handleRemoveActor(actor.id)
-                        }
-                        className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 border transition-all flex items-center gap-1.5 cursor-pointer ${
-                          isSelected
-                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 font-semibold'
-                            : 'bg-white/[0.03] text-white/60 hover:text-white hover:bg-white/[0.07] border-white/10'
-                        }`}
-                      >
-                        <span>{actor.name}</span>
-                        {isSelected ? (
-                          <Check className="w-3 h-3 text-indigo-400" />
-                        ) : (
-                          <Plus className="w-3 h-3 text-white/30" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* CHIPS DOS ATORES DA LISTA ATIVA */}
-                {selectedActors.length > 0 && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-[#14141c] border border-white/10 space-y-3.5">
-                    {/* Cabeçalho do Painel com Controles */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-white/80 uppercase tracking-wider flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-indigo-400" />
-                          Atores na Lista
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                          {selectedActors.length} {selectedActors.length === 1 ? 'ator' : 'atores'}
-                        </span>
-                        <span className="text-xs text-white/40 hidden md:inline">•</span>
-                        <span className="text-xs text-white/50 hidden md:inline">
-                          {aggregatedMedia.length} títulos gerados
-                          {crossoverCount > 0 && (
-                            <span className="text-purple-400 font-semibold ml-1.5">
-                              • {crossoverCount} crossover(s)
-                            </span>
+                {/* ========================================================================= */}
+                {/* MODO SIMPLIFICADO: GRADE DE ATORES NA LISTA (O que o usuário gostava no /listas/atores) */}
+                {/* ========================================================================= */}
+                {displayMode === 'actors_simple' && (
+                  <div className="space-y-6">
+                    {/* Barra de Pesquisa de Atores para Adicionar à Lista */}
+                    <div className="relative z-30" ref={searchContainerRef}>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
+                          {isSearchingActor ? (
+                            <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+                          ) : (
+                            <Search className="w-4 h-4 text-white/40" />
                           )}
-                        </span>
-                      </div>
-
-                      {/* Controles de Busca e Visualização */}
-                      <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
-                        {/* Mini busca dentro da lista se houver mais de 5 atores */}
-                        {selectedActors.length > 5 && (
-                          <div className="relative flex-1 sm:w-44">
-                            <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="text"
-                              placeholder="Filtrar ator..."
-                              value={actorSearchInList}
-                              onChange={(e) => setActorSearchInList(e.target.value)}
-                              className="w-full pl-8 pr-7 py-1 bg-black/40 border border-white/10 text-white text-xs rounded-xl focus:border-amber-500/50 focus:outline-none placeholder:text-white/30"
-                            />
-                            {actorSearchInList && (
-                              <button
-                                onClick={() => setActorSearchInList('')}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Botão Alternar Densidade: Normal vs Compacto */}
-                        <button
-                          onClick={() => setActorDensityMode((prev) => (prev === 'normal' ? 'compact' : 'normal'))}
-                          title={actorDensityMode === 'normal' ? 'Alternar para visualização compacta' : 'Alternar para visualização normal'}
-                          className={`p-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-                            actorDensityMode === 'compact'
-                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-                              : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
-                          }`}
-                        >
-                          <SlidersHorizontal className="w-3.5 h-3.5" />
-                          <span className="text-[11px] hidden sm:inline">
-                            {actorDensityMode === 'compact' ? 'Compacto' : 'Normal'}
-                          </span>
-                        </button>
-
-                        {/* Botão Expandir / Recolher se houver mais de 8 atores e não estiver pesquisando */}
-                        {selectedActors.length > 8 && !actorSearchInList.trim() && (
-                          <button
-                            onClick={() => setIsActorsExpanded((prev) => !prev)}
-                            className="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>{isActorsExpanded ? 'Recolher' : `Ver todos (${selectedActors.length})`}</span>
-                            {isActorsExpanded ? (
-                              <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
-                            ) : (
-                              <ChevronDown className="w-3.5 h-3.5 text-amber-400" />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Container de Chips com max-height protegido */}
-                    <div
-                      className={`flex flex-wrap gap-2 transition-all ${
-                        isActorsExpanded
-                          ? 'max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/20'
-                          : ''
-                      }`}
-                    >
-                      {displayedActors.map((actor) => {
-                        const avatarUrl = actor.profile_path
-                          ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
-                          : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=185';
-                        const isLoading = loadingCreditsMap[actor.id];
-                        const isCompact = actorDensityMode === 'compact';
-
-                        return (
-                          <div
-                            key={actor.id}
-                            className={`flex items-center rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all group ${
-                              isCompact ? 'gap-1.5 pl-1 pr-2 py-0.5' : 'gap-2 pl-1.5 pr-2.5 py-1.5'
-                            }`}
-                          >
-                            <Link
-                              to={`/atores/${actor.id}`}
-                              className={`rounded-lg overflow-hidden shrink-0 ${
-                                isCompact ? 'w-4 h-4' : 'w-6 h-6'
-                              }`}
-                            >
-                              <img src={avatarUrl} alt={actor.name} className="w-full h-full object-cover" />
-                            </Link>
-
-                            <Link
-                              to={`/atores/${actor.id}`}
-                              className={`font-semibold text-white/90 hover:text-amber-400 transition-colors truncate max-w-[150px] ${
-                                isCompact ? 'text-[11px]' : 'text-xs'
-                              }`}
-                              title={actor.name}
-                            >
-                              {actor.name}
-                            </Link>
-
-                            {isLoading ? (
-                              <Loader2 className="w-3 h-3 text-amber-400 animate-spin ml-0.5" />
-                            ) : (
-                              <button
-                                onClick={() => handleRemoveActor(actor.id)}
-                                className="text-white/30 hover:text-red-400 p-0.5 rounded transition-colors ml-0.5 cursor-pointer opacity-80 group-hover:opacity-100"
-                                title="Remover ator desta lista"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {/* Botão pill rápido para expandir quando estiver colapsado */}
-                      {!isActorsExpanded && !actorSearchInList.trim() && selectedActors.length > 8 && (
-                        <button
-                          onClick={() => setIsActorsExpanded(true)}
-                          className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                          <span>+{selectedActors.length - 8} outros (Expandir)</span>
-                        </button>
-                      )}
-
-                      {/* Caso de busca sem resultados */}
-                      {actorSearchInList.trim() && displayedActors.length === 0 && (
-                        <div className="py-2 text-xs text-white/40 italic">
-                          Nenhum ator correspondente a "{actorSearchInList}" nesta lista.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* FILTROS E ABAS DE RECOMENDAÇÃO */}
-                {selectedActors.length > 0 ? (
-                  <div className="space-y-4 pt-2">
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                      {/* Abas */}
-                      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#14141c] border border-white/10 overflow-x-auto max-w-full scrollbar-none horizontal-scroll touch-pan-x">
-                        <button
-                          onClick={() => setActiveTab('recommended')}
-                          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                            activeTab === 'recommended'
-                              ? 'bg-purple-600 text-white shadow-md font-bold'
-                              : 'text-white/50 hover:text-white'
-                          }`}
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Recomendados</span>
-                        </button>
-
-                        {selectedActors.length >= 2 && (
-                          <button
-                            onClick={() => setActiveTab('crossover')}
-                            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                              activeTab === 'crossover'
-                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-bold'
-                                : 'text-white/50 hover:text-white'
-                            }`}
-                          >
-                            <Users className="w-3.5 h-3.5" />
-                            <span>Juntos no Elenco</span>
-                            {crossoverCount > 0 && (
-                              <span className="px-1.5 py-0.2 text-[10px] bg-black/20 text-current font-bold rounded-full">
-                                {crossoverCount}
-                              </span>
-                            )}
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => setActiveTab('popular')}
-                          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                            activeTab === 'popular'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-white/50 hover:text-white'
-                          }`}
-                        >
-                          <Flame className="w-3.5 h-3.5 text-orange-400" />
-                          <span>Populares</span>
-                        </button>
-
-                        <button
-                          onClick={() => setActiveTab('top_rated')}
-                          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                            activeTab === 'top_rated'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-white/50 hover:text-white'
-                          }`}
-                        >
-                          <Award className="w-3.5 h-3.5 text-yellow-400" />
-                          <span>Melhor Avaliados</span>
-                        </button>
-
-                        <button
-                          onClick={() => setActiveTab('gems')}
-                          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                            activeTab === 'gems'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-white/50 hover:text-white'
-                          }`}
-                        >
-                          <Gem className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>Pérolas</span>
-                        </button>
-
-                        <button
-                          onClick={() => setActiveTab('recent')}
-                          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                            activeTab === 'recent'
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-white/50 hover:text-white'
-                          }`}
-                        >
-                          <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Lançamentos</span>
-                        </button>
-                      </div>
-
-                      {/* Filtros Auxiliares */}
-                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                        <div className="flex items-center p-1 rounded-xl bg-[#14141c] border border-white/10 shrink-0">
-                          <button
-                            onClick={() => setMediaTypeFilter('all')}
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                              mediaTypeFilter === 'all'
-                                ? 'bg-indigo-600 text-white'
-                                : 'text-white/40 hover:text-white'
-                            }`}
-                          >
-                            Todos
-                          </button>
-                          <button
-                            onClick={() => setMediaTypeFilter('movie')}
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
-                              mediaTypeFilter === 'movie'
-                                ? 'bg-indigo-600 text-white'
-                                : 'text-white/40 hover:text-white'
-                            }`}
-                          >
-                            <Film className="w-3 h-3" /> Filmes
-                          </button>
-                          <button
-                            onClick={() => setMediaTypeFilter('tv')}
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
-                              mediaTypeFilter === 'tv'
-                                ? 'bg-indigo-600 text-white'
-                                : 'text-white/40 hover:text-white'
-                            }`}
-                          >
-                            <Tv className="w-3 h-3" /> Séries
-                          </button>
                         </div>
 
-                        {/* Busca dentro dos títulos */}
-                        <div className="relative w-44">
-                          <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            placeholder="Filtrar títulos..."
-                            value={titleFilter}
-                            onChange={(e) => setTitleFilter(e.target.value)}
-                            className="w-full pl-8 pr-3 py-1.5 bg-[#14141c] border border-white/10 text-white text-xs rounded-xl focus:border-indigo-500 focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                        <input
+                          type="text"
+                          value={actorSearchQuery}
+                          onChange={(e) => setActorSearchQuery(e.target.value)}
+                          onFocus={() => actorSearchQuery.trim() && setIsSearchDropdownOpen(true)}
+                          placeholder={`Adicionar ator ou atriz em "${activeList?.name || 'Lista'}" (ex: Bryan Cranston, Zendaya, Wagner Moura)...`}
+                          className="w-full pl-11 pr-10 py-3 h-12 bg-[#14141c] border border-white/10 hover:border-white/20 focus:border-indigo-500/70 focus:ring-1 focus:ring-indigo-500/20 rounded-2xl text-white placeholder:text-white/30 text-sm shadow-xl backdrop-blur-xl transition-all focus:outline-none"
+                        />
 
-                    {/* BARRA DE FILTRO POR CATEGORIA (GÊNEROS) */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
-                      <span className="text-xs text-white/40 font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
-                        <Tag className="w-3.5 h-3.5 text-indigo-400" /> Categorias:
-                      </span>
-
-                      {availableCategories.map((cat) => {
-                        const isSelected = selectedCategory === cat.id;
-                        const count = categoryCounts[cat.id] ?? 0;
-
-                        if (cat.id !== 'all' && count === 0 && !isSelected) {
-                          return null;
-                        }
-
-                        return (
+                        {actorSearchQuery && (
                           <button
-                            key={cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer border ${
-                              isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-500 font-bold shadow-md shadow-indigo-950/30 scale-[1.02]'
-                                : 'bg-[#14141c] border-white/10 text-white/70 hover:text-white hover:border-white/20 hover:bg-white/5'
-                            }`}
+                            onClick={() => {
+                              setActorSearchQuery('');
+                              setActorSearchResults([]);
+                              setIsSearchDropdownOpen(false);
+                            }}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-white/40 hover:text-white cursor-pointer"
                           >
-                            <span>{cat.label}</span>
-                            <span
-                              className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
-                                isSelected
-                                  ? 'bg-black/25 text-white'
-                                  : 'bg-white/10 text-white/50'
-                              }`}
-                            >
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
-
-                      {selectedCategory !== 'all' && (
-                        <button
-                          onClick={() => setSelectedCategory('all')}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-white/40 hover:text-amber-400 transition-colors shrink-0 cursor-pointer"
-                          title="Limpar filtro de categoria"
-                        >
-                          <X className="w-3 h-3" />
-                          <span>Limpar</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* GRID DE FILMES E SÉRIES DOS ATORES */}
-                    {visibleMediaItems.length === 0 ? (
-                      <div className="text-center py-20 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 space-y-2">
-                        <Film className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
-                        <h4 className="text-base font-bold text-zinc-300">Nenhum título encontrado</h4>
-                        <p className="text-xs text-zinc-500 max-w-md mx-auto">
-                          {selectedCategory !== 'all'
-                            ? `Nenhum filme ou série encontrado na categoria "${
-                                MOVIE_CATEGORIES.find((c) => c.id === selectedCategory)?.label || ''
-                              }".`
-                            : activeTab === 'crossover'
-                            ? 'Nenhum filme ou série com 2 ou mais atores desta lista juntos.'
-                            : 'Tente alterar os filtros ou adicione mais atores.'}
-                        </p>
-                        {selectedCategory !== 'all' && (
-                          <button
-                            onClick={() => setSelectedCategory('all')}
-                            className="mt-2 text-xs font-bold text-amber-400 hover:text-amber-300 px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 cursor-pointer inline-flex items-center gap-1 transition-colors"
-                          >
-                            <X className="w-3 h-3" /> Ver todas as categorias
+                            <X className="w-4 h-4" />
                           </button>
                         )}
                       </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-                          {visibleMediaItems.map((item) => {
-                            const isSerie = item.media_type === 'tv';
-                            const title = item.title || item.name || 'Sem título';
-                            const date = item.release_date || item.first_air_date;
+
+                      {/* Dropdown Autocomplete */}
+                      {isSearchDropdownOpen && actorSearchResults.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#14141c]/98 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-2xl overflow-hidden z-50 divide-y divide-white/5 max-h-[340px] overflow-y-auto">
+                          {actorSearchResults.map((person) => {
+                            const isAlreadySelected = selectedActors.some((a) => a.id === person.id);
+                            const avatarUrl = person.profile_path
+                              ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+                              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=185';
 
                             return (
-                              <div key={`${item.media_type}-${item.id}`} className="flex flex-col group relative">
-                                <MediaCard
-                                  id={item.id}
-                                  title={title}
-                                  posterPath={item.poster_path}
-                                  voteAverage={item.vote_average || 0}
-                                  releaseDate={date}
-                                  type={isSerie ? 'serie' : 'movie'}
-                                  userRating={
-                                    isSerie
-                                      ? serieRatings[item.id] || null
-                                      : movieRatings[item.id] || null
+                              <div
+                                key={person.id}
+                                onClick={() => {
+                                  if (isAlreadySelected) {
+                                    handleRemoveActor(person.id);
+                                  } else {
+                                    handleSelectActor(person);
                                   }
-                                />
+                                }}
+                                className="flex items-center justify-between p-3 transition-colors cursor-pointer hover:bg-white/5"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <img
+                                    src={avatarUrl}
+                                    alt={person.name}
+                                    className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/10 bg-white/5"
+                                  />
 
-                                {/* Tag com atores da lista que participam do título */}
-                                {item.matchedActors.length > 0 && (
-                                  <div className="mt-1.5 px-2 py-1 bg-[#14141c] border border-white/10 rounded-lg text-[10px] text-white/70 line-clamp-1">
-                                    {item.matchedActors.length > 1 ? (
-                                      <span className="text-amber-400 font-bold flex items-center gap-1">
-                                        <Users className="w-3 h-3" />
-                                        {item.matchedActors.map((a) => a.name).join(' & ')}
+                                  <div className="flex flex-col text-left min-w-0">
+                                    <span className="text-sm font-bold text-white truncate">{person.name}</span>
+                                    {person.known_for && person.known_for.length > 0 ? (
+                                      <span className="text-xs text-white/40 truncate">
+                                        Conhecido por:{' '}
+                                        {person.known_for
+                                          .map((m: any) => m.title || m.name)
+                                          .filter(Boolean)
+                                          .slice(0, 2)
+                                          .join(', ')}
                                       </span>
                                     ) : (
-                                      <span>
-                                        Com <strong className="text-white">{item.matchedActors[0].name}</strong>
-                                        {item.matchedActors[0].character && (
-                                          <span className="text-white/40"> ({item.matchedActors[0].character})</span>
-                                        )}
+                                      <span className="text-xs text-white/40">
+                                        {person.known_for_department || 'Atuação'}
                                       </span>
                                     )}
                                   </div>
-                                )}
+                                </div>
+
+                                <div className="shrink-0 ml-3">
+                                  {isAlreadySelected ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveActor(person.id);
+                                      }}
+                                      className="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                    >
+                                      <Trash2 className="w-3 h-3" /> Remover
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                    >
+                                      <Plus className="w-3 h-3" /> Adicionar
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}
                         </div>
+                      )}
+                    </div>
 
-                        {/* Botão Carregar Mais */}
-                        {visibleCount < filteredAndSortedMedia.length && (
-                          <div className="flex justify-center mt-10">
-                            <button
-                              onClick={() => setVisibleCount((prev) => prev + 24)}
-                              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#14141c] border border-white/10 hover:border-amber-400 text-amber-400 text-xs font-bold transition-all shadow-lg hover:bg-white/5 cursor-pointer"
-                            >
-                              <ChevronDown className="w-4 h-4" />
-                              Carregar mais títulos ({filteredAndSortedMedia.length - visibleCount} restantes)
-                            </button>
-                          </div>
+                    {/* Sugestões Populares para Adicionar */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
+                      <span className="text-xs text-white/30 font-medium shrink-0 flex items-center gap-1 mr-1">
+                        <Sparkles className="w-3 h-3 text-indigo-400" /> Sugestões Populares:
+                      </span>
+                      {POPULAR_SUGGESTIONS.map((actor) => {
+                        const isSelected = selectedActors.some((a) => a.id === actor.id);
+                        return (
+                          <button
+                            key={actor.id}
+                            onClick={() =>
+                              !isSelected
+                                ? handleSelectActor(actor as unknown as TmdbPerson)
+                                : handleRemoveActor(actor.id)
+                            }
+                            className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 border transition-all flex items-center gap-1.5 cursor-pointer ${
+                              isSelected
+                                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 font-semibold'
+                                : 'bg-white/[0.03] text-white/60 hover:text-white hover:bg-white/[0.07] border-white/10'
+                            }`}
+                          >
+                            <span>{actor.name}</span>
+                            {isSelected ? (
+                              <Check className="w-3 h-3 text-indigo-400" />
+                            ) : (
+                              <Plus className="w-3 h-3 text-white/30" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Métricas de Resumo da Lista */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-[#14141c] border border-white/10 p-3.5 rounded-2xl flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-white/40 block">Total de Atores</span>
+                          <span className="text-lg font-black text-white">{selectedActors.length}</span>
+                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                          <Users className="w-4 h-4" />
+                        </div>
+                      </div>
+
+                      <div className="bg-[#14141c] border border-white/10 p-3.5 rounded-2xl flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-white/40 block">Produções Mapeadas</span>
+                          <span className="text-lg font-black text-white">{aggregatedMedia.length}</span>
+                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                          <Film className="w-4 h-4" />
+                        </div>
+                      </div>
+
+                      <div className="bg-[#14141c] border border-white/10 p-3.5 rounded-2xl flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-white/40 block">Crossovers (Juntos)</span>
+                          <span className="text-lg font-black text-amber-400">{crossoverCount}</span>
+                        </div>
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Barra de Filtro e Busca nos Atores na Lista */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                      <div className="relative w-full sm:w-80">
+                        <Search className="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Buscar ator nesta lista..."
+                          value={simpleActorSearch}
+                          onChange={(e) => setSimpleActorSearch(e.target.value)}
+                          className="w-full pl-9 pr-8 py-2 bg-[#14141c] border border-white/10 text-white placeholder:text-white/30 text-xs rounded-xl focus:border-indigo-500 focus:outline-none"
+                        />
+                        {simpleActorSearch && (
+                          <button
+                            onClick={() => setSimpleActorSearch('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         )}
-                      </>
+                      </div>
+
+                      <div className="text-xs text-white/50 self-end sm:self-auto font-medium">
+                        Exibindo <strong className="text-white">{simplifiedActors.length}</strong> de <strong className="text-white">{selectedActors.length}</strong> atores
+                      </div>
+                    </div>
+
+                    {/* Grade de Atores no Modo Simplificado */}
+                    {simplifiedActors.length === 0 ? (
+                      <div className="text-center py-16 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 space-y-2">
+                        <Users className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+                        <h4 className="text-base font-bold text-zinc-300">
+                          {selectedActors.length === 0 ? 'Esta lista de atores está vazia' : 'Nenhum ator encontrado'}
+                        </h4>
+                        <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                          {selectedActors.length === 0
+                            ? 'Adicione atores usando o campo de busca acima ou clicando nas sugestões populares.'
+                            : `Nenhum ator correspondente a "${simpleActorSearch}" nesta lista.`}
+                        </p>
+                        {simpleActorSearch && (
+                          <button
+                            onClick={() => setSimpleActorSearch('')}
+                            className="mt-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <X className="w-3 h-3" /> Limpar busca
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5">
+                        {simplifiedActors.map((actor) => {
+                          const avatarUrl = actor.profile_path
+                            ? `https://image.tmdb.org/t/p/w300${actor.profile_path}`
+                            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300';
+
+                          return (
+                            <div
+                              key={actor.id}
+                              className="group relative flex flex-col rounded-2xl overflow-hidden bg-[#14141c] border border-white/10 hover:border-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 transition-all"
+                            >
+                              <Link to={`/atores/${actor.id}`} className="aspect-[2/3] w-full overflow-hidden bg-black/40 relative">
+                                <img
+                                  src={avatarUrl}
+                                  alt={actor.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#14141c] via-transparent to-transparent opacity-60" />
+                              </Link>
+
+                              <div className="p-3 flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <Link
+                                    to={`/atores/${actor.id}`}
+                                    className="font-bold text-xs text-white group-hover:text-indigo-300 transition-colors truncate block"
+                                    title={actor.name}
+                                  >
+                                    {actor.name}
+                                  </Link>
+                                  <span className="text-[10px] text-white/40 block truncate">
+                                    {actor.known_for_department || 'Atuação'}
+                                  </span>
+                                </div>
+
+                                <button
+                                  onClick={() => handleRemoveActor(actor.id)}
+                                  className="p-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer shrink-0"
+                                  title="Remover ator da lista"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
-                ) : (
-                  <div className="text-center py-16 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 max-w-xl mx-auto space-y-3">
-                    <Users className="w-10 h-10 text-amber-400/50 mx-auto" />
-                    <h3 className="text-base font-bold text-white">Adicione atores para começar</h3>
-                    <p className="text-xs text-white/50 px-6">
-                      Busque atores acima ou clique nas sugestões populares para que o sistema gere a filmografia combinada e crossovers exclusivos.
-                    </p>
+                )}
+
+                {/* ========================================================================= */}
+                {/* MODO FILMES & SÉRIES: RECOMENDAÇÕES, FILTROS, CATEGORIAS E OBRAS */}
+                {/* ========================================================================= */}
+                {displayMode === 'productions' && (
+                  <div className="space-y-6">
+                    {/* BARRA DE PESQUISA RÁPIDA DE ATORES */}
+                    <div className="relative z-30" ref={searchContainerRef}>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40">
+                          {isSearchingActor ? (
+                            <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+                          ) : (
+                            <Search className="w-4 h-4 text-white/40" />
+                          )}
+                        </div>
+
+                        <input
+                          type="text"
+                          value={actorSearchQuery}
+                          onChange={(e) => setActorSearchQuery(e.target.value)}
+                          onFocus={() => actorSearchQuery.trim() && setIsSearchDropdownOpen(true)}
+                          placeholder={`Adicionar mais atores à lista (ex: Cillian Murphy, Keanu Reeves)...`}
+                          className="w-full pl-11 pr-10 py-3 h-12 bg-[#14141c] border border-white/10 hover:border-white/20 focus:border-indigo-500/70 focus:ring-1 focus:ring-indigo-500/20 rounded-2xl text-white placeholder:text-white/30 text-sm shadow-xl backdrop-blur-xl transition-all focus:outline-none"
+                        />
+
+                        {actorSearchQuery && (
+                          <button
+                            onClick={() => {
+                              setActorSearchQuery('');
+                              setActorSearchResults([]);
+                              setIsSearchDropdownOpen(false);
+                            }}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-white/40 hover:text-white cursor-pointer"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Dropdown Autocomplete */}
+                      {isSearchDropdownOpen && actorSearchResults.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#14141c]/98 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-2xl overflow-hidden z-50 divide-y divide-white/5 max-h-[340px] overflow-y-auto">
+                          {actorSearchResults.map((person) => {
+                            const isAlreadySelected = selectedActors.some((a) => a.id === person.id);
+                            const avatarUrl = person.profile_path
+                              ? `https://image.tmdb.org/t/p/w185${person.profile_path}`
+                              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=185';
+
+                            return (
+                              <div
+                                key={person.id}
+                                onClick={() => {
+                                  if (isAlreadySelected) {
+                                    handleRemoveActor(person.id);
+                                  } else {
+                                    handleSelectActor(person);
+                                  }
+                                }}
+                                className="flex items-center justify-between p-3 transition-colors cursor-pointer hover:bg-white/5"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <img
+                                    src={avatarUrl}
+                                    alt={person.name}
+                                    className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/10 bg-white/5"
+                                  />
+
+                                  <div className="flex flex-col text-left min-w-0">
+                                    <span className="text-sm font-bold text-white truncate">{person.name}</span>
+                                    {person.known_for && person.known_for.length > 0 ? (
+                                      <span className="text-xs text-white/40 truncate">
+                                        Conhecido por:{' '}
+                                        {person.known_for
+                                          .map((m: any) => m.title || m.name)
+                                          .filter(Boolean)
+                                          .slice(0, 2)
+                                          .join(', ')}
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-white/40">
+                                        {person.known_for_department || 'Atuação'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 ml-3">
+                                  {isAlreadySelected ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveActor(person.id);
+                                      }}
+                                      className="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                    >
+                                      <Trash2 className="w-3 h-3" /> Remover
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold h-7 px-2.5 rounded-lg text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                    >
+                                      <Plus className="w-3 h-3" /> Adicionar
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CHIPS DOS ATORES DA LISTA ATIVA (STRIP COMPACTO) */}
+                    {selectedActors.length > 0 && (
+                      <div className="p-4 rounded-2xl bg-[#14141c] border border-white/10 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-white/80 uppercase tracking-wider flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-indigo-400" />
+                              Atores na Lista
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                              {selectedActors.length}
+                            </span>
+                            <span className="text-xs text-white/40 hidden md:inline">•</span>
+                            <span className="text-xs text-white/50 hidden md:inline">
+                              {aggregatedMedia.length} produções
+                              {crossoverCount > 0 && (
+                                <span className="text-amber-400 font-semibold ml-1.5">
+                                  • {crossoverCount} crossover(s)
+                                </span>
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+                            {/* Mini busca dentro da lista se houver mais de 5 atores */}
+                            {selectedActors.length > 5 && (
+                              <div className="relative flex-1 sm:w-44">
+                                <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                <input
+                                  type="text"
+                                  placeholder="Filtrar ator..."
+                                  value={actorSearchInList}
+                                  onChange={(e) => setActorSearchInList(e.target.value)}
+                                  className="w-full pl-8 pr-7 py-1 bg-black/40 border border-white/10 text-white text-xs rounded-xl focus:border-amber-500/50 focus:outline-none placeholder:text-white/30"
+                                />
+                                {actorSearchInList && (
+                                  <button
+                                    onClick={() => setActorSearchInList('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Botão Alternar Densidade */}
+                            <button
+                              onClick={() => setActorDensityMode((prev) => (prev === 'normal' ? 'compact' : 'normal'))}
+                              title={actorDensityMode === 'normal' ? 'Visualização compacta' : 'Visualização normal'}
+                              className={`p-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                                actorDensityMode === 'compact'
+                                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                  : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
+                              }`}
+                            >
+                              <SlidersHorizontal className="w-3.5 h-3.5" />
+                              <span className="text-[11px] hidden sm:inline">
+                                {actorDensityMode === 'compact' ? 'Compacto' : 'Normal'}
+                              </span>
+                            </button>
+
+                            {/* Botão Expandir se houver mais de 8 atores */}
+                            {selectedActors.length > 8 && !actorSearchInList.trim() && (
+                              <button
+                                onClick={() => setIsActorsExpanded((prev) => !prev)}
+                                className="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white/80 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+                              >
+                                <span>{isActorsExpanded ? 'Recolher' : `Ver todos (${selectedActors.length})`}</span>
+                                {isActorsExpanded ? (
+                                  <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
+                                ) : (
+                                  <ChevronDown className="w-3.5 h-3.5 text-amber-400" />
+                                )}
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => setDisplayMode('actors_simple')}
+                              className="px-2.5 py-1 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                              title="Abrir página completa no modo simplificado"
+                            >
+                              <span>Modo Simplificado</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Container de Chips */}
+                        <div
+                          className={`flex flex-wrap gap-2 transition-all ${
+                            isActorsExpanded
+                              ? 'max-h-60 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/20'
+                              : ''
+                          }`}
+                        >
+                          {displayedActors.map((actor) => {
+                            const avatarUrl = actor.profile_path
+                              ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=185';
+                            const isLoading = loadingCreditsMap[actor.id];
+                            const isCompact = actorDensityMode === 'compact';
+
+                            return (
+                              <div
+                                key={actor.id}
+                                className={`flex items-center rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all group ${
+                                  isCompact ? 'gap-1.5 pl-1 pr-2 py-0.5' : 'gap-2 pl-1.5 pr-2.5 py-1.5'
+                                }`}
+                              >
+                                <Link
+                                  to={`/atores/${actor.id}`}
+                                  className={`rounded-lg overflow-hidden shrink-0 ${
+                                    isCompact ? 'w-4 h-4' : 'w-6 h-6'
+                                  }`}
+                                >
+                                  <img src={avatarUrl} alt={actor.name} className="w-full h-full object-cover" />
+                                </Link>
+
+                                <Link
+                                  to={`/atores/${actor.id}`}
+                                  className={`font-semibold text-white/90 hover:text-amber-400 transition-colors truncate max-w-[150px] ${
+                                    isCompact ? 'text-[11px]' : 'text-xs'
+                                  }`}
+                                  title={actor.name}
+                                >
+                                  {actor.name}
+                                </Link>
+
+                                {isLoading ? (
+                                  <Loader2 className="w-3 h-3 text-amber-400 animate-spin ml-0.5" />
+                                ) : (
+                                  <button
+                                    onClick={() => handleRemoveActor(actor.id)}
+                                    className="text-white/30 hover:text-red-400 p-0.5 rounded transition-colors ml-0.5 cursor-pointer opacity-80 group-hover:opacity-100"
+                                    title="Remover ator desta lista"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          {!isActorsExpanded && !actorSearchInList.trim() && selectedActors.length > 8 && (
+                            <button
+                              onClick={() => setIsActorsExpanded(true)}
+                              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold transition-all cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>+{selectedActors.length - 8} outros (Expandir)</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* FILTROS E ABAS DE RECOMENDAÇÃO DE OBRAS */}
+                    {selectedActors.length > 0 ? (
+                      <div className="space-y-4 pt-2">
+                        {/* Linha 1 de Filtros: Abas de Ordenação, Tipo de Mídia, Nota TMDB e Busca */}
+                        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3">
+                          {/* Abas Principais */}
+                          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#14141c] border border-white/10 overflow-x-auto max-w-full scrollbar-none horizontal-scroll touch-pan-x w-full xl:w-auto">
+                            <button
+                              onClick={() => setActiveTab('recommended')}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                                activeTab === 'recommended'
+                                  ? 'bg-purple-600 text-white shadow-md font-bold'
+                                  : 'text-white/50 hover:text-white'
+                              }`}
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Recomendados</span>
+                            </button>
+
+                            {selectedActors.length >= 2 && (
+                              <button
+                                onClick={() => setActiveTab('crossover')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                                  activeTab === 'crossover'
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-bold'
+                                    : 'text-white/50 hover:text-white'
+                                }`}
+                              >
+                                <Users className="w-3.5 h-3.5" />
+                                <span>Juntos no Elenco</span>
+                                {crossoverCount > 0 && (
+                                  <span className="px-1.5 py-0.2 text-[10px] bg-black/20 text-current font-bold rounded-full">
+                                    {crossoverCount}
+                                  </span>
+                                )}
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => setActiveTab('popular')}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                                activeTab === 'popular'
+                                  ? 'bg-white/15 text-white font-bold'
+                                  : 'text-white/50 hover:text-white'
+                              }`}
+                            >
+                              <Flame className="w-3.5 h-3.5 text-orange-400" />
+                              <span>Populares</span>
+                            </button>
+
+                            <button
+                              onClick={() => setActiveTab('top_rated')}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                                activeTab === 'top_rated'
+                                  ? 'bg-white/15 text-white font-bold'
+                                  : 'text-white/50 hover:text-white'
+                              }`}
+                            >
+                              <Award className="w-3.5 h-3.5 text-yellow-400" />
+                              <span>Melhor Avaliados</span>
+                            </button>
+
+                            <button
+                              onClick={() => setActiveTab('gems')}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                                activeTab === 'gems'
+                                  ? 'bg-white/15 text-white font-bold'
+                                  : 'text-white/50 hover:text-white'
+                              }`}
+                            >
+                              <Gem className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Pérolas</span>
+                            </button>
+
+                            <button
+                              onClick={() => setActiveTab('recent')}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                                activeTab === 'recent'
+                                  ? 'bg-white/15 text-white font-bold'
+                                  : 'text-white/50 hover:text-white'
+                              }`}
+                            >
+                              <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Lançamentos</span>
+                            </button>
+                          </div>
+
+                          {/* Filtros Auxiliares (Tipo, Nota TMDB e Busca) */}
+                          <div className="flex items-center gap-2 flex-wrap w-full xl:w-auto justify-between xl:justify-end">
+                            {/* Tipo de Mídia */}
+                            <div className="flex items-center p-1 rounded-xl bg-[#14141c] border border-white/10 shrink-0">
+                              <button
+                                onClick={() => setMediaTypeFilter('all')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                  mediaTypeFilter === 'all'
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-white/40 hover:text-white'
+                                }`}
+                              >
+                                Todos
+                              </button>
+                              <button
+                                onClick={() => setMediaTypeFilter('movie')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                                  mediaTypeFilter === 'movie'
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-white/40 hover:text-white'
+                                }`}
+                              >
+                                <Film className="w-3 h-3" /> Filmes
+                              </button>
+                              <button
+                                onClick={() => setMediaTypeFilter('tv')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                                  mediaTypeFilter === 'tv'
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-white/40 hover:text-white'
+                                }`}
+                              >
+                                <Tv className="w-3 h-3" /> Séries
+                              </button>
+                            </div>
+
+                            {/* Filtro por Nota TMDB */}
+                            <div className="flex items-center gap-1 p-1 rounded-xl bg-[#14141c] border border-white/10 shrink-0">
+                              <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider flex items-center gap-1 pl-1.5 pr-0.5">
+                                <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> Nota:
+                              </span>
+                              {[
+                                { label: 'Todas', value: 0 },
+                                { label: '8.0+', value: 8 },
+                                { label: '7.0+', value: 7 },
+                                { label: '6.0+', value: 6 },
+                              ].map((rate) => (
+                                <button
+                                  key={rate.value}
+                                  onClick={() => setMinRating(rate.value)}
+                                  className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                    minRating === rate.value
+                                      ? 'bg-amber-500 text-zinc-950 font-bold shadow-md shadow-amber-500/20'
+                                      : 'text-white/50 hover:text-white'
+                                  }`}
+                                >
+                                  {rate.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Busca dentro dos títulos */}
+                            <div className="relative w-full sm:w-44">
+                              <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="text"
+                                placeholder="Filtrar títulos..."
+                                value={titleFilter}
+                                onChange={(e) => setTitleFilter(e.target.value)}
+                                className="w-full pl-8 pr-3 py-1.5 bg-[#14141c] border border-white/10 text-white text-xs rounded-xl focus:border-indigo-500 focus:outline-none placeholder:text-white/30"
+                              />
+                              {titleFilter && (
+                                <button
+                                  onClick={() => setTitleFilter('')}
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Linha 2 de Filtros: Categorias (Gêneros) */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none horizontal-scroll touch-pan-x max-w-full w-full">
+                          <span className="text-xs text-white/40 font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
+                            <Tag className="w-3.5 h-3.5 text-indigo-400" /> Categorias:
+                          </span>
+
+                          {availableCategories.map((cat) => {
+                            const isSelected = selectedCategory === cat.id;
+                            const count = categoryCounts[cat.id] ?? 0;
+
+                            if (cat.id !== 'all' && count === 0 && !isSelected) {
+                              return null;
+                            }
+
+                            return (
+                              <button
+                                key={cat.id}
+                                onClick={() => setSelectedCategory(cat.id)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer border ${
+                                  isSelected
+                                    ? 'bg-indigo-600 text-white border-indigo-500 font-bold shadow-md shadow-indigo-950/30 scale-[1.02]'
+                                    : 'bg-[#14141c] border-white/10 text-white/70 hover:text-white hover:border-white/20 hover:bg-white/5'
+                                }`}
+                              >
+                                <span>{cat.label}</span>
+                                <span
+                                  className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
+                                    isSelected
+                                      ? 'bg-black/25 text-white'
+                                      : 'bg-white/10 text-white/50'
+                                  }`}
+                                >
+                                  {count}
+                                </span>
+                              </button>
+                            );
+                          })}
+
+                          {selectedCategory !== 'all' && (
+                            <button
+                              onClick={() => setSelectedCategory('all')}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-white/40 hover:text-amber-400 transition-colors shrink-0 cursor-pointer"
+                              title="Limpar filtro de categoria"
+                            >
+                              <X className="w-3 h-3" />
+                              <span>Limpar</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* GRID DE FILMES E SÉRIES DOS ATORES */}
+                        {visibleMediaItems.length === 0 ? (
+                          <div className="text-center py-20 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 space-y-2">
+                            <Film className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+                            <h4 className="text-base font-bold text-zinc-300">Nenhum título encontrado</h4>
+                            <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                              {minRating > 0
+                                ? `Nenhuma produção com nota TMDB ≥ ${minRating.toFixed(1)}.`
+                                : selectedCategory !== 'all'
+                                ? `Nenhum filme ou série encontrado na categoria "${
+                                    MOVIE_CATEGORIES.find((c) => c.id === selectedCategory)?.label || ''
+                                  }".`
+                                : activeTab === 'crossover'
+                                ? 'Nenhum filme ou série com 2 ou mais atores desta lista juntos.'
+                                : 'Tente alterar os filtros ou adicione mais atores.'}
+                            </p>
+                            {(selectedCategory !== 'all' || minRating > 0 || titleFilter) && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCategory('all');
+                                  setMinRating(0);
+                                  setTitleFilter('');
+                                }}
+                                className="mt-2 text-xs font-bold text-amber-400 hover:text-amber-300 px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 cursor-pointer inline-flex items-center gap-1 transition-colors"
+                              >
+                                <RotateCcw className="w-3 h-3" /> Redefinir filtros
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+                              {visibleMediaItems.map((item) => {
+                                const isSerie = item.media_type === 'tv';
+                                const title = item.title || item.name || 'Sem título';
+                                const date = item.release_date || item.first_air_date;
+
+                                return (
+                                  <div key={`${item.media_type}-${item.id}`} className="flex flex-col group relative">
+                                    <MediaCard
+                                      id={item.id}
+                                      title={title}
+                                      posterPath={item.poster_path}
+                                      voteAverage={item.vote_average || 0}
+                                      releaseDate={date}
+                                      type={isSerie ? 'serie' : 'movie'}
+                                      userRating={
+                                        isSerie
+                                          ? serieRatings[item.id] || null
+                                          : movieRatings[item.id] || null
+                                      }
+                                    />
+
+                                    {/* Tag com atores da lista que participam do título */}
+                                    {item.matchedActors.length > 0 && (
+                                      <div className="mt-1.5 px-2 py-1 bg-[#14141c] border border-white/10 rounded-lg text-[10px] text-white/70 line-clamp-1">
+                                        {item.matchedActors.length > 1 ? (
+                                          <span className="text-amber-400 font-bold flex items-center gap-1">
+                                            <Users className="w-3 h-3 shrink-0" />
+                                            {item.matchedActors.map((a) => a.name).join(' & ')}
+                                          </span>
+                                        ) : (
+                                          <span>
+                                            Com <strong className="text-white">{item.matchedActors[0].name}</strong>
+                                            {item.matchedActors[0].character && (
+                                              <span className="text-white/40"> ({item.matchedActors[0].character})</span>
+                                            )}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Botão Carregar Mais */}
+                            {visibleCount < filteredAndSortedMedia.length && (
+                              <div className="flex justify-center mt-10">
+                                <button
+                                  onClick={() => setVisibleCount((prev) => prev + 24)}
+                                  className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#14141c] border border-white/10 hover:border-amber-400 text-amber-400 text-xs font-bold transition-all shadow-lg hover:bg-white/5 cursor-pointer"
+                                >
+                                  <ChevronDown className="w-4 h-4" />
+                                  Carregar mais títulos ({filteredAndSortedMedia.length - visibleCount} restantes)
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-16 bg-[#14141c]/40 rounded-3xl border border-dashed border-white/10 max-w-xl mx-auto space-y-3">
+                        <Users className="w-10 h-10 text-amber-400/50 mx-auto" />
+                        <h3 className="text-base font-bold text-white">Adicione atores para começar</h3>
+                        <p className="text-xs text-white/50 px-6">
+                          Busque atores acima ou use o modo simplificado para gerenciar sua lista. A filmografia e crossovers serão gerados automaticamente.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -1388,7 +1898,7 @@ export const ActorsPage: React.FC = () => {
                   {catalogQuery ? `Resultados para "${catalogQuery}"` : 'Atores e Criadores Populares no TMDB'}
                 </h2>
                 <p className="text-xs text-zinc-400">
-                  Explore os perfis, filmografia completa e adicione atores favoritos
+                  Explore perfis de atores e descubra produções completas
                 </p>
               </div>
 
@@ -1469,6 +1979,142 @@ export const ActorsPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* ========================================================================= */}
+      {/* MODAL: ESCOLHER ALEATÓRIO (SORTEIO) */}
+      {/* ========================================================================= */}
+      {isRandomModalOpen && randomItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative bg-[#12121a] border border-amber-500/40 text-white rounded-3xl overflow-hidden w-full max-w-lg shadow-2xl shadow-amber-950/30 flex flex-col">
+            {/* Backdrop com Glow */}
+            {randomItem.backdrop_path && (
+              <div className="absolute inset-x-0 top-0 h-44 overflow-hidden pointer-events-none opacity-25">
+                <img
+                  src={`https://image.tmdb.org/t/p/w780${randomItem.backdrop_path}`}
+                  alt=""
+                  className="w-full h-full object-cover blur-sm"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#12121a]/80 to-[#12121a]" />
+              </div>
+            )}
+
+            {/* Header do Modal */}
+            <div className="relative z-10 flex items-center justify-between p-5 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <Dices className={`w-5 h-5 ${isRollingDice ? 'animate-spin' : ''}`} />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                    LMS Escolheu para Você!
+                  </h3>
+                  <span className="text-[11px] text-amber-300/80 font-medium">
+                    Sorteado entre {filteredAndSortedMedia.length} títulos da sua lista
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRandomModalOpen(false)}
+                className="text-white/40 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Corpo do Modal */}
+            <div className="relative z-10 p-5 sm:p-6 space-y-4">
+              <div className="flex gap-4 items-start">
+                {/* Poster */}
+                <div className="w-24 sm:w-28 aspect-[2/3] rounded-2xl overflow-hidden shrink-0 bg-black/40 border border-white/10 shadow-lg">
+                  <img
+                    src={
+                      randomItem.poster_path
+                        ? `https://image.tmdb.org/t/p/w300${randomItem.poster_path}`
+                        : '/placeholder-movie.jpg'
+                    }
+                    alt={randomItem.title || randomItem.name || ''}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Detalhes */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                      {randomItem.media_type === 'tv' ? 'Série' : 'Filme'}
+                    </span>
+                    {(randomItem.release_date || randomItem.first_air_date) && (
+                      <span className="text-xs text-white/50 font-medium">
+                        {new Date(randomItem.release_date || randomItem.first_air_date || '').getFullYear()}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                      <Star className="w-3 h-3 fill-amber-400" />
+                      {(randomItem.vote_average || 0).toFixed(1)}
+                    </span>
+                  </div>
+
+                  <h4 className="text-lg font-black text-white leading-tight">
+                    {randomItem.title || randomItem.name}
+                  </h4>
+
+                  {/* Atores participantes */}
+                  <div className="pt-1">
+                    <span className="text-[10px] uppercase font-bold text-white/40 block mb-1">
+                      Atores da sua lista no elenco:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {randomItem.matchedActors.map((a) => (
+                        <span
+                          key={a.id}
+                          className="px-2 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-[11px] font-semibold"
+                        >
+                          {a.name}
+                          {a.character && <span className="text-white/40 font-normal"> ({a.character})</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sinopse */}
+              {randomItem.overview && (
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-3.5 max-h-32 overflow-y-auto">
+                  <p className="text-xs text-white/70 leading-relaxed font-normal">
+                    {randomItem.overview}
+                  </p>
+                </div>
+              )}
+
+              {/* Botões de Ação */}
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={handleReroll}
+                  disabled={isRollingDice}
+                  className="flex-1 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Dices className={`w-4 h-4 text-amber-400 ${isRollingDice ? 'animate-spin' : ''}`} />
+                  <span>Sortear Outro</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRandomModalOpen(false);
+                    navigate(randomItem.media_type === 'tv' ? `/series/${randomItem.id}` : `/filmes/${randomItem.id}`);
+                  }}
+                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Film className="w-4 h-4" />
+                  <span>Ver Detalhes</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: CRIAR LISTA DE ATORES */}
       {isCreateModalOpen && (

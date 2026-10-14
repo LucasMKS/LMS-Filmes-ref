@@ -86,7 +86,7 @@ export const Navbar: React.FC = () => {
   const userMenuLinks = [
     { name: 'Watchlist', href: '/watchlist', icon: Bookmark, description: 'Títulos para assistir' },
     { name: 'Minhas Listas', href: '/listas', icon: ListFilter, description: 'Coleções personalizadas' },
-    { name: 'Atores', href: '/atores', icon: Users, description: 'Catálogo de atores' },
+    { name: 'Atores', href: '/listas/atores', icon: Users, description: 'Listas e produções de atores' },
   ];
 
   const isActive = (path: string) => {
