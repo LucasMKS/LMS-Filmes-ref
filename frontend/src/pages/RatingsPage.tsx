@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ratingApi, movieApi, serieApi, favoriteApi } from '../services/api';
 import { RatingMovieResponse, RatingSerieResponse, TmdbMovie, TmdbSerie } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { RatingModal } from '../components/RatingModal';
-import { Star, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid } from 'lucide-react';
+import { Star, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid, Calendar, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const RatingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'movies' | 'series'>('movies');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRating, setSelectedRating] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
   const [visibleLimit, setVisibleLimit] = useState(24);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'split' | 'unified'>('split');
@@ -44,7 +46,7 @@ export const RatingsPage: React.FC = () => {
 
   useEffect(() => {
     setVisibleLimit(24);
-  }, [searchQuery, activeTab, viewMode]);
+  }, [searchQuery, activeTab, viewMode, selectedRating, selectedYear]);
 
   const loadRatings = async () => {
     setLoading(true);
@@ -95,17 +97,118 @@ export const RatingsPage: React.FC = () => {
     }
   };
 
+  const getReleaseYear = (dateStr?: string | null): number | null => {
+    if (!dateStr) return null;
+    const year = parseInt(dateStr.substring(0, 4), 10);
+    return isNaN(year) ? null : year;
+  };
+
+  // Anos únicos presentes nas avaliações do usuário
+  const availableYears = useMemo(() => {
+    const yearsSet = new Set<number>();
+    movieRatings.forEach((item) => {
+      const y = getReleaseYear(item.details?.release_date);
+      if (y) yearsSet.add(y);
+    });
+    serieRatings.forEach((item) => {
+      const y = getReleaseYear(item.details?.first_air_date);
+      if (y) yearsSet.add(y);
+    });
+    return Array.from(yearsSet).sort((a, b) => b - a);
+  }, [movieRatings, serieRatings]);
+
+  // Décadas presentes nas avaliações do usuário
+  const availableDecades = useMemo(() => {
+    const decadesSet = new Set<number>();
+    let hasBefore1980 = false;
+
+    availableYears.forEach((year) => {
+      if (year < 1980) {
+        hasBefore1980 = true;
+      } else {
+        const decade = Math.floor(year / 10) * 10;
+        decadesSet.add(decade);
+      }
+    });
+
+    const sortedDecades = Array.from(decadesSet).sort((a, b) => b - a);
+    const list = sortedDecades.map((d) => ({
+      value: `decade-${d}`,
+      label: `Anos ${d} (${d}–${d + 9})`,
+    }));
+
+    if (hasBefore1980) {
+      list.push({
+        value: 'decade-before-1980',
+        label: 'Antes de 1980',
+      });
+    }
+
+    return list;
+  }, [availableYears]);
+
+  const matchesRating = (userRating: number) => {
+    if (selectedRating === 'all') return true;
+    if (selectedRating === 'min-9') return userRating >= 9;
+    if (selectedRating === 'min-8') return userRating >= 8;
+    if (selectedRating === 'min-7') return userRating >= 7;
+    if (selectedRating === 'min-6') return userRating >= 6;
+    if (selectedRating === 'exact-10') return userRating === 10;
+    if (selectedRating === 'range-9') return userRating >= 9 && userRating < 10;
+    if (selectedRating === 'range-8') return userRating >= 8 && userRating < 9;
+    if (selectedRating === 'range-7') return userRating >= 7 && userRating < 8;
+    if (selectedRating === 'range-6') return userRating >= 6 && userRating < 7;
+    if (selectedRating === 'range-5') return userRating >= 5 && userRating < 6;
+    if (selectedRating === 'range-under-5') return userRating < 5;
+    return true;
+  };
+
+  const matchesYear = (dateStr?: string | null) => {
+    if (selectedYear === 'all') return true;
+    const y = getReleaseYear(dateStr);
+    if (!y) return false;
+
+    if (selectedYear === 'decade-before-1980') {
+      return y < 1980;
+    }
+    if (selectedYear.startsWith('decade-')) {
+      const start = parseInt(selectedYear.replace('decade-', ''), 10);
+      return y >= start && y <= start + 9;
+    }
+    return y === parseInt(selectedYear, 10);
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedRating('all');
+    setSelectedYear('all');
+  };
+
   const q = searchQuery.toLowerCase().trim();
 
-  const filteredMovies = movieRatings.filter((item) => {
-    if (!q) return true;
-    return (item.details?.title || '').toLowerCase().includes(q);
-  });
+  const filteredMovies = useMemo(() => {
+    return movieRatings.filter((item) => {
+      if (q) {
+        const title = (item.details?.title || '').toLowerCase();
+        if (!title.includes(q)) return false;
+      }
+      if (!matchesRating(item.rating)) return false;
+      if (!matchesYear(item.details?.release_date)) return false;
+      return true;
+    });
+  }, [movieRatings, q, selectedRating, selectedYear]);
 
-  const filteredSeries = serieRatings.filter((item) => {
-    if (!q) return true;
-    return (item.details?.name || '').toLowerCase().includes(q);
-  });
+  const filteredSeries = useMemo(() => {
+    return serieRatings.filter((item) => {
+      if (q) {
+        const name = (item.details?.name || '').toLowerCase();
+        if (!name.includes(q)) return false;
+      }
+      if (!matchesRating(item.rating)) return false;
+      if (!matchesYear(item.details?.first_air_date)) return false;
+      return true;
+    });
+  }, [serieRatings, q, selectedRating, selectedYear]);
 
   const currentList = activeTab === 'movies' ? filteredMovies : filteredSeries;
   const totalCount = currentList.length;
@@ -148,25 +251,131 @@ export const RatingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Abas e Seletor de Layout */}
+          {/* Abas, Filtros e Seletor de Layout */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
-            <div className="flex items-center bg-[#14141c] p-1 rounded-xl border border-white/[0.06] text-xs">
-              <button
-                onClick={() => setActiveTab('movies')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-                  activeTab === 'movies' ? 'bg-indigo-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Film className="w-3.5 h-3.5" /> Filmes ({filteredMovies.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('series')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-                  activeTab === 'series' ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
-              </button>
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+              {/* Abas */}
+              <div className="flex items-center bg-[#14141c] p-1 rounded-xl border border-white/[0.06] text-xs">
+                <button
+                  onClick={() => setActiveTab('movies')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                    activeTab === 'movies' ? 'bg-indigo-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Film className="w-3.5 h-3.5" /> Filmes ({filteredMovies.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('series')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                    activeTab === 'series' ? 'bg-violet-600 text-white font-bold' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
+                </button>
+              </div>
+
+              {/* Divisor sutil */}
+              <div className="hidden sm:block h-5 w-px bg-white/[0.08]" />
+
+              {/* Filtro por Nota */}
+              <div className="relative flex items-center">
+                <div
+                  className={`pointer-events-none absolute left-3 flex items-center transition-colors ${
+                    selectedRating !== 'all' ? 'text-amber-400' : 'text-zinc-400'
+                  }`}
+                >
+                  <Star className={`w-3.5 h-3.5 ${selectedRating !== 'all' ? 'fill-amber-400' : ''}`} />
+                </div>
+                <select
+                  value={selectedRating}
+                  onChange={(e) => setSelectedRating(e.target.value)}
+                  className={`appearance-none text-xs font-semibold rounded-xl pl-8 pr-8 py-2 cursor-pointer transition-all focus:outline-none ${
+                    selectedRating !== 'all'
+                      ? 'bg-amber-500/10 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/10'
+                      : 'bg-[#14141c] text-zinc-300 border border-white/[0.08] hover:border-white/[0.15]'
+                  }`}
+                  title="Filtrar por Nota"
+                >
+                  <option value="all" className="bg-[#14141c] text-zinc-200">Todas as Notas</option>
+                  <optgroup label="Notas Mínimas" className="bg-[#14141c] text-zinc-400 font-semibold">
+                    <option value="min-9" className="bg-[#14141c] text-zinc-200 font-normal">9+ ★ (Excelente)</option>
+                    <option value="min-8" className="bg-[#14141c] text-zinc-200 font-normal">8+ ★ (Muito bom)</option>
+                    <option value="min-7" className="bg-[#14141c] text-zinc-200 font-normal">7+ ★ (Bom)</option>
+                    <option value="min-6" className="bg-[#14141c] text-zinc-200 font-normal">6+ ★ (Regular)</option>
+                  </optgroup>
+                  <optgroup label="Nota Específica" className="bg-[#14141c] text-zinc-400 font-semibold">
+                    <option value="exact-10" className="bg-[#14141c] text-zinc-200 font-normal">10 ★ (Obra-prima)</option>
+                    <option value="range-9" className="bg-[#14141c] text-zinc-200 font-normal">9 ★ (9.0 a 9.9)</option>
+                    <option value="range-8" className="bg-[#14141c] text-zinc-200 font-normal">8 ★ (8.0 a 8.9)</option>
+                    <option value="range-7" className="bg-[#14141c] text-zinc-200 font-normal">7 ★ (7.0 a 7.9)</option>
+                    <option value="range-6" className="bg-[#14141c] text-zinc-200 font-normal">6 ★ (6.0 a 6.9)</option>
+                    <option value="range-5" className="bg-[#14141c] text-zinc-200 font-normal">5 ★ (5.0 a 5.9)</option>
+                    <option value="range-under-5" className="bg-[#14141c] text-zinc-200 font-normal">Menor que 5 ★</option>
+                  </optgroup>
+                </select>
+                <div className="pointer-events-none absolute right-2.5 flex items-center text-zinc-500">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Filtro por Ano */}
+              <div className="relative flex items-center">
+                <div
+                  className={`pointer-events-none absolute left-3 flex items-center transition-colors ${
+                    selectedYear !== 'all' ? 'text-indigo-400' : 'text-zinc-400'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                </div>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className={`appearance-none text-xs font-semibold rounded-xl pl-8 pr-8 py-2 cursor-pointer transition-all focus:outline-none ${
+                    selectedYear !== 'all'
+                      ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/40 shadow-sm shadow-indigo-500/10'
+                      : 'bg-[#14141c] text-zinc-300 border border-white/[0.08] hover:border-white/[0.15]'
+                  }`}
+                  title="Filtrar por Ano de Lançamento"
+                >
+                  <option value="all" className="bg-[#14141c] text-zinc-200">Todos os Anos</option>
+                  {availableDecades.length > 0 && (
+                    <optgroup label="Por Década" className="bg-[#14141c] text-zinc-400 font-semibold">
+                      {availableDecades.map((d) => (
+                        <option key={d.value} value={d.value} className="bg-[#14141c] text-zinc-200 font-normal">
+                          {d.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {availableYears.length > 0 && (
+                    <optgroup label="Por Ano" className="bg-[#14141c] text-zinc-400 font-semibold">
+                      {availableYears.map((year) => (
+                        <option key={year} value={String(year)} className="bg-[#14141c] text-zinc-200 font-normal">
+                          {year}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <div className="pointer-events-none absolute right-2.5 flex items-center text-zinc-500">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Botão Limpar Filtros quando ativos */}
+              {(selectedRating !== 'all' || selectedYear !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSelectedRating('all');
+                    setSelectedYear('all');
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-medium text-zinc-400 hover:text-white bg-[#14141c] border border-white/[0.08] hover:border-white/[0.2] transition-colors cursor-pointer"
+                  title="Resetar filtros de nota e ano"
+                >
+                  <RotateCcw className="w-3 h-3 text-zinc-400" />
+                  <span>Limpar</span>
+                </button>
+              )}
             </div>
 
             {/* Seletor de Modo de Exibição */}
@@ -222,7 +431,19 @@ export const RatingsPage: React.FC = () => {
               {filteredMovies.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-12 text-center border border-dashed border-white/[0.06] rounded-xl bg-[#0a0a0f]/30">
                   <Film className="w-8 h-8 text-white/15 mb-2" />
-                  <p className="text-white/40 text-sm font-medium">Nenhum filme avaliado</p>
+                  <p className="text-white/40 text-sm font-medium">
+                    {searchQuery || selectedRating !== 'all' || selectedYear !== 'all'
+                      ? 'Nenhum filme corresponde aos filtros'
+                      : 'Nenhum filme avaliado'}
+                  </p>
+                  {(searchQuery || selectedRating !== 'all' || selectedYear !== 'all') && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="mt-3 text-xs text-indigo-400 hover:text-indigo-300 underline cursor-pointer"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -274,7 +495,19 @@ export const RatingsPage: React.FC = () => {
               {filteredSeries.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-12 text-center border border-dashed border-white/[0.06] rounded-xl bg-[#0a0a0f]/30">
                   <Tv className="w-8 h-8 text-white/15 mb-2" />
-                  <p className="text-white/40 text-sm font-medium">Nenhuma série avaliada</p>
+                  <p className="text-white/40 text-sm font-medium">
+                    {searchQuery || selectedRating !== 'all' || selectedYear !== 'all'
+                      ? 'Nenhuma série corresponde aos filtros'
+                      : 'Nenhuma série avaliada'}
+                  </p>
+                  {(searchQuery || selectedRating !== 'all' || selectedYear !== 'all') && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="mt-3 text-xs text-violet-400 hover:text-violet-300 underline cursor-pointer"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -327,12 +560,20 @@ export const RatingsPage: React.FC = () => {
           <div className="text-center py-20 bg-[#14141c]/40 rounded-2xl border border-white/[0.06]">
             <Star className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-zinc-300">
-              {searchQuery
-                ? `Nenhum resultado para "${searchQuery}"`
+              {searchQuery || selectedRating !== 'all' || selectedYear !== 'all'
+                ? 'Nenhuma avaliação encontrada com os filtros selecionados'
                 : activeTab === 'movies'
                 ? 'Nenhum filme avaliado ainda'
                 : 'Nenhuma série avaliada ainda'}
             </h3>
+            {(searchQuery || selectedRating !== 'all' || selectedYear !== 'all') && (
+              <button
+                onClick={handleResetFilters}
+                className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-lg shadow-indigo-600/20"
+              >
+                Limpar filtros
+              </button>
+            )}
           </div>
         ) : (
           <div>
