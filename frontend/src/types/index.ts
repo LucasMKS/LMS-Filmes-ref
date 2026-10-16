@@ -253,12 +253,13 @@ export type RatingSerieResponse = RatedSerie;
 
 export interface RatedEpisode {
   id: number;
-  serieId: number;
+  serieId: number | string;
   seasonNumber: number;
   episodeNumber: number;
   rating: number;
   comment?: string;
-  ratedAt: string;
+  ratedAt?: string;
+  createdAt?: string;
 }
 
 export type EpisodeRatingResponse = RatedEpisode;

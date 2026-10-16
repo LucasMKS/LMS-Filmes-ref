@@ -28,6 +28,11 @@ public class RateEpisodeController {
         return ResponseEntity.ok(rateEpisodeService.rateEpisode(request, authentication.getName()));
     }
 
+    @GetMapping
+    public ResponseEntity<List<RatingEpisode>> getAllUserRatedEpisodes(Authentication authentication) {
+        return ResponseEntity.ok(rateEpisodeService.getAllUserRatedEpisodes(authentication.getName()));
+    }
+
     @GetMapping("/serie/{serieId}")
     public ResponseEntity<List<RatingEpisode>> getRatedEpisodes(
             @PathVariable String serieId,

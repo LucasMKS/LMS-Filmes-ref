@@ -19,6 +19,8 @@ public interface EpisodeRatingRepository extends JpaRepository<RatingEpisode, Lo
     List<RatingEpisode> findByUserIdAndSerieIdAndSeasonNumberOrderByEpisodeNumberAsc(
             Long userId, String serieId, int seasonNumber);
 
+    List<RatingEpisode> findByUserIdOrderByIdDesc(Long userId);
+
     long countByUserId(Long userId);
 
     void deleteByUserIdAndSerieIdAndSeasonNumberAndEpisodeNumber(

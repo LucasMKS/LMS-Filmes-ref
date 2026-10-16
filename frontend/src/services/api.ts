@@ -225,14 +225,17 @@ export const ratingApi = {
   deleteSerieRating: async (serieId: number) => apiClient.delete<SimpleApiResponse>(`/rate/serie/${serieId}`),
 
   rateEpisode: async (payload: {
-    serieId: number;
+    serieId: number | string;
     seasonNumber: number;
     episodeNumber: number;
     rating: number;
     comment?: string;
   }) => apiClient.post<RatedEpisode>('/rate/episode', payload),
+  getUserEpisodeRatings: async () => apiClient.get<RatedEpisode[]>('/rate/episodes'),
   getSeasonEpisodeRatings: async (serieId: number, seasonNumber: number) =>
     apiClient.get<RatedEpisode[]>(`/rate/episode/serie/${serieId}/season/${seasonNumber}`),
+  deleteEpisodeRating: async (serieId: number | string, seasonNumber: number, episodeNumber: number) =>
+    apiClient.delete<SimpleApiResponse>(`/rate/episode/serie/${serieId}/season/${seasonNumber}/episode/${episodeNumber}`),
 };
 export const ratingsApi = ratingApi;
 

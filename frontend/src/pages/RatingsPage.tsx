@@ -1,13 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { ratingApi, movieApi, serieApi, favoriteApi } from '../services/api';
-import { RatingMovieResponse, RatingSerieResponse, TmdbMovie, TmdbSerie } from '../types';
+import { RatingMovieResponse, RatingSerieResponse, RatedEpisode, TmdbMovie, TmdbSerie, TmdbEpisode, SeasonDetail } from '../types';
 import { MediaCard } from '../components/MediaCard';
 import { RatingModal } from '../components/RatingModal';
-import { Star, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid, Calendar, RotateCcw } from 'lucide-react';
+import { EpisodeRatingModal } from '../components/EpisodeRatingModal';
+import { Star, Film, Tv, Search, X, ChevronDown, Columns2, LayoutGrid, Calendar, RotateCcw, Clapperboard, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 
+export interface EnrichedEpisodeRating extends RatedEpisode {
+  serieDetails?: TmdbSerie;
+  episodeDetails?: TmdbEpisode;
+}
+
 export const RatingsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'movies' | 'series'>('movies');
+  const [activeTab, setActiveTab] = useState<'movies' | 'series' | 'episodes'>('movies');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRating, setSelectedRating] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -17,10 +24,11 @@ export const RatingsPage: React.FC = () => {
 
   const [movieRatings, setMovieRatings] = useState<(RatingMovieResponse & { details?: TmdbMovie })[]>([]);
   const [serieRatings, setSerieRatings] = useState<(RatingSerieResponse & { details?: TmdbSerie })[]>([]);
+  const [episodeRatings, setEpisodeRatings] = useState<EnrichedEpisodeRating[]>([]);
   const [favoriteMovieIds, setFavoriteMovieIds] = useState<Set<number>>(new Set());
   const [favoriteSerieIds, setFavoriteSerieIds] = useState<Set<number>>(new Set());
 
-  // Editing state (Quick view / Edit rating modal)
+  // Editing state for movies/series
   const [editingItem, setEditingItem] = useState<{
     id: number;
     title: string;
@@ -29,6 +37,17 @@ export const RatingsPage: React.FC = () => {
     rating: number;
     comment?: string;
     rewatchCount?: number;
+  } | null>(null);
+
+  // Editing state for episodes
+  const [editingEpisode, setEditingEpisode] = useState<{
+    serieId: number | string;
+    seasonNumber: number;
+    episodeNumber: number;
+    episodeTitle?: string;
+    serieTitle?: string;
+    rating: number;
+    comment?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -51,9 +70,10 @@ export const RatingsPage: React.FC = () => {
   const loadRatings = async () => {
     setLoading(true);
     try {
-      const [mRes, sRes, favMRes, favSRes] = await Promise.all([
+      const [mRes, sRes, eRes, favMRes, favSRes] = await Promise.all([
         ratingApi.getUserMovieRatings(),
         ratingApi.getUserSerieRatings(),
+        ratingApi.getUserEpisodeRatings().catch(() => ({ data: [] as RatedEpisode[] })),
         favoriteApi.getUserMovies().catch(() => ({ data: [] })),
         favoriteApi.getUserSeries().catch(() => ({ data: [] })),
       ]);
@@ -64,14 +84,16 @@ export const RatingsPage: React.FC = () => {
       setFavoriteSerieIds(favSSet);
 
       const movieIds = (mRes.data || []).map((item) => item.movieId).filter(Boolean);
-      const serieIds = (sRes.data || []).map((item) => item.serieId).filter(Boolean);
+      const rawSerieIds = (sRes.data || []).map((item) => item.serieId).filter(Boolean);
+      const rawEpSerieIds = (eRes.data || []).map((item) => Number(item.serieId)).filter(Boolean);
+      const allSerieIds = Array.from(new Set([...rawSerieIds, ...rawEpSerieIds]));
 
       const [moviesBatchRes, seriesBatchRes] = await Promise.all([
         movieIds.length
           ? movieApi.getBatch(movieIds).catch(() => ({ data: {} as Record<string, TmdbMovie> }))
           : Promise.resolve({ data: {} as Record<string, TmdbMovie> }),
-        serieIds.length
-          ? serieApi.getBatch(serieIds).catch(() => ({ data: {} as Record<string, TmdbSerie> }))
+        allSerieIds.length
+          ? serieApi.getBatch(allSerieIds).catch(() => ({ data: {} as Record<string, TmdbSerie> }))
           : Promise.resolve({ data: {} as Record<string, TmdbSerie> }),
       ]);
 
@@ -88,8 +110,41 @@ export const RatingsPage: React.FC = () => {
         details: seriesBatch[String(item.serieId)] || undefined,
       }));
 
+      // Carregar temporadas para os episódios avaliados
+      const seasonMap: Record<string, SeasonDetail> = {};
+      const rawEpisodes = eRes.data || [];
+      const uniqueSeasonKeys = Array.from(
+        new Set(rawEpisodes.map((e) => `${e.serieId}_${e.seasonNumber}`))
+      );
+
+      const seasonResults = await Promise.allSettled(
+        uniqueSeasonKeys.map(async (key) => {
+          const [sId, sNum] = key.split('_');
+          const res = await serieApi.getSeasonDetails(Number(sId), Number(sNum));
+          return { key, season: res.data };
+        })
+      );
+
+      seasonResults.forEach((res) => {
+        if (res.status === 'fulfilled') {
+          seasonMap[res.value.key] = res.value.season;
+        }
+      });
+
+      const loadedE: EnrichedEpisodeRating[] = rawEpisodes.map((item) => {
+        const key = `${item.serieId}_${item.seasonNumber}`;
+        const season = seasonMap[key];
+        const ep = season?.episodes?.find((e) => e.episode_number === item.episodeNumber);
+        return {
+          ...item,
+          serieDetails: seriesBatch[String(item.serieId)] || undefined,
+          episodeDetails: ep,
+        };
+      });
+
       setMovieRatings(loadedM);
       setSerieRatings(loadedS);
+      setEpisodeRatings(loadedE);
     } catch {
       toast.error('Erro ao carregar avaliações');
     } finally {
@@ -114,8 +169,12 @@ export const RatingsPage: React.FC = () => {
       const y = getReleaseYear(item.details?.first_air_date);
       if (y) yearsSet.add(y);
     });
+    episodeRatings.forEach((item) => {
+      const y = getReleaseYear(item.episodeDetails?.air_date || item.serieDetails?.first_air_date);
+      if (y) yearsSet.add(y);
+    });
     return Array.from(yearsSet).sort((a, b) => b - a);
-  }, [movieRatings, serieRatings]);
+  }, [movieRatings, serieRatings, episodeRatings]);
 
   // Décadas presentes nas avaliações do usuário
   const availableDecades = useMemo(() => {
@@ -210,7 +269,31 @@ export const RatingsPage: React.FC = () => {
     });
   }, [serieRatings, q, selectedRating, selectedYear]);
 
-  const currentList = activeTab === 'movies' ? filteredMovies : filteredSeries;
+  const filteredEpisodes = useMemo(() => {
+    return episodeRatings.filter((item) => {
+      if (q) {
+        const serieTitle = (item.serieDetails?.name || '').toLowerCase();
+        const epTitle = (item.episodeDetails?.name || '').toLowerCase();
+        const epCode1 = `t${item.seasonNumber} e${item.episodeNumber}`.toLowerCase();
+        const epCode2 = `s${item.seasonNumber}e${item.episodeNumber}`.toLowerCase();
+        if (!serieTitle.includes(q) && !epTitle.includes(q) && !epCode1.includes(q) && !epCode2.includes(q)) {
+          return false;
+        }
+      }
+      if (!matchesRating(item.rating)) return false;
+      const epDate = item.episodeDetails?.air_date || item.serieDetails?.first_air_date;
+      if (!matchesYear(epDate)) return false;
+      return true;
+    });
+  }, [episodeRatings, q, selectedRating, selectedYear]);
+
+  const currentList =
+    activeTab === 'movies'
+      ? filteredMovies
+      : activeTab === 'series'
+      ? filteredSeries
+      : filteredEpisodes;
+
   const totalCount = currentList.length;
   const visibleList = currentList.slice(0, visibleLimit);
 
@@ -222,10 +305,10 @@ export const RatingsPage: React.FC = () => {
             <div>
               <h1 className="text-2xl font-black text-white flex items-center gap-2">
                 <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
-                Minhas Avaliações ({movieRatings.length + serieRatings.length})
+                Minhas Avaliações ({movieRatings.length + serieRatings.length + episodeRatings.length})
               </h1>
               <p className="text-xs text-zinc-400 mt-1">
-                Revise suas notas, comentários e contadores de rewatch
+                Revise suas notas e comentários em filmes, séries e episódios
               </p>
             </div>
 
@@ -236,7 +319,7 @@ export const RatingsPage: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar avaliações por título..."
+                placeholder="Buscar por filme, série ou episódio..."
                 className="w-full bg-[#14141c] border border-white/[0.08] rounded-xl pl-9 pr-9 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/20 transition-colors"
               />
               {searchQuery && (
@@ -271,6 +354,14 @@ export const RatingsPage: React.FC = () => {
                   }`}
                 >
                   <Tv className="w-3.5 h-3.5" /> Séries ({filteredSeries.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('episodes')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                    activeTab === 'episodes' ? 'bg-amber-500 text-zinc-950 font-black' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Clapperboard className="w-3.5 h-3.5" /> Episódios ({filteredEpisodes.length})
                 </button>
               </div>
 
@@ -412,7 +503,7 @@ export const RatingsPage: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <div className="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : viewMode === 'split' ? (
+        ) : viewMode === 'split' && activeTab !== 'episodes' ? (
           /* MODO LADO A LADO */
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Coluna Filmes */}
@@ -545,10 +636,10 @@ export const RatingsPage: React.FC = () => {
 
             {/* Botão Carregar Mais em Lado a Lado */}
             {(filteredMovies.length > visibleLimit || filteredSeries.length > visibleLimit) && (
-              <div className="flex justify-center mt-12">
+              <div className="flex justify-center mt-12 col-span-1 lg:col-span-2">
                 <button
                   onClick={() => setVisibleLimit((prev) => prev + 24)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#14141c] border border-white/[0.08] hover:border-yellow-400 text-yellow-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#14141c] border border-white/[0.08] hover:border-yellow-400 text-yellow-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm cursor-pointer"
                 >
                   <ChevronDown className="w-4 h-4" />
                   Carregar mais avaliações ({Math.max(0, filteredMovies.length - visibleLimit) + Math.max(0, filteredSeries.length - visibleLimit)} restantes)
@@ -564,7 +655,9 @@ export const RatingsPage: React.FC = () => {
                 ? 'Nenhuma avaliação encontrada com os filtros selecionados'
                 : activeTab === 'movies'
                 ? 'Nenhum filme avaliado ainda'
-                : 'Nenhuma série avaliada ainda'}
+                : activeTab === 'series'
+                ? 'Nenhuma série avaliada ainda'
+                : 'Nenhum episódio avaliado ainda'}
             </h3>
             {(searchQuery || selectedRating !== 'all' || selectedYear !== 'all') && (
               <button
@@ -643,12 +736,126 @@ export const RatingsPage: React.FC = () => {
               </div>
             )}
 
+            {activeTab === 'episodes' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                {(visibleList as EnrichedEpisodeRating[]).map((item) => {
+                  const imageUrl = item.episodeDetails?.still_path
+                    ? `https://image.tmdb.org/t/p/w500${item.episodeDetails.still_path}`
+                    : item.serieDetails?.backdrop_path
+                    ? `https://image.tmdb.org/t/p/w500${item.serieDetails.backdrop_path}`
+                    : item.serieDetails?.poster_path
+                    ? `https://image.tmdb.org/t/p/w500${item.serieDetails.poster_path}`
+                    : null;
+
+                  return (
+                    <div
+                      key={`ep-${item.id || `${item.serieId}-${item.seasonNumber}-${item.episodeNumber}`}`}
+                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f1320] transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/40 hover:shadow-[0_12px_40px_rgba(0,0,0,0.6)]"
+                    >
+                      {/* Top subtle glow on hover */}
+                      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-30" />
+
+                      {/* Banner do Episódio (aspect 16:9) */}
+                      <div className="relative aspect-[16/9] w-full overflow-hidden bg-white/5">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={item.episodeDetails?.name || `Episódio ${item.episodeNumber}`}
+                            loading="lazy"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-600">
+                            <Tv className="w-10 h-10 opacity-40" />
+                          </div>
+                        )}
+
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#090c15] via-transparent to-transparent opacity-80" />
+
+                        {/* Badge Temporada e Episódio */}
+                        <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-amber-300 bg-black/75 backdrop-blur-md rounded-xl border border-amber-500/30">
+                          T{item.seasonNumber} · E{item.episodeNumber}
+                        </div>
+
+                        {/* Badge da Nota do Usuário */}
+                        <div className="pointer-events-none absolute right-3 top-3 z-10 flex items-center gap-1 px-2.5 py-1 text-xs font-black text-zinc-950 bg-amber-400 rounded-xl shadow-lg">
+                          <Star className="w-3.5 h-3.5 fill-zinc-950" />
+                          <span>{Number(item.rating).toFixed(1)}</span>
+                        </div>
+                      </div>
+
+                      {/* Informações */}
+                      <div className="flex flex-col flex-1 p-4 justify-between gap-3">
+                        <div className="space-y-1">
+                          <Link
+                            to={`/series/${item.serieId}`}
+                            className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 hover:underline truncate block"
+                            title={item.serieDetails?.name || `Série #${item.serieId}`}
+                          >
+                            {item.serieDetails?.name || `Série #${item.serieId}`}
+                          </Link>
+
+                          <Link
+                            to={`/series/${item.serieId}/season/${item.seasonNumber}`}
+                            className="text-sm font-bold text-white hover:text-amber-400 line-clamp-1 block transition-colors"
+                            title={item.episodeDetails?.name || `Episódio ${item.episodeNumber}`}
+                          >
+                            {item.episodeDetails?.name || `Episódio ${item.episodeNumber}`}
+                          </Link>
+
+                          {item.episodeDetails?.air_date && (
+                            <p className="text-[11px] text-zinc-400">
+                              Exibido em: {new Date(item.episodeDetails.air_date + 'T00:00:00').toLocaleDateString('pt-BR')}
+                            </p>
+                          )}
+
+                          {item.comment && (
+                            <div className="mt-2 text-xs text-zinc-300 bg-white/[0.03] border border-white/[0.05] rounded-xl p-2.5 italic line-clamp-2">
+                              "{item.comment}"
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Botões de Ação */}
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/[0.05]">
+                          <button
+                            onClick={() =>
+                              setEditingEpisode({
+                                serieId: item.serieId,
+                                seasonNumber: item.seasonNumber,
+                                episodeNumber: item.episodeNumber,
+                                episodeTitle: item.episodeDetails?.name || `Episódio ${item.episodeNumber}`,
+                                serieTitle: item.serieDetails?.name,
+                                rating: Number(item.rating),
+                                comment: item.comment,
+                              })
+                            }
+                            className="flex items-center gap-1 text-xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Star className="w-3.5 h-3.5" />
+                            <span>Editar Nota</span>
+                          </button>
+
+                          <Link
+                            to={`/series/${item.serieId}/season/${item.seasonNumber}`}
+                            className="text-xs text-zinc-400 hover:text-white px-2 py-1.5 rounded-lg transition-colors"
+                          >
+                            Ver Temporada →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Botão Carregar Mais */}
             {visibleLimit < totalCount && (
               <div className="flex justify-center mt-12">
                 <button
                   onClick={() => setVisibleLimit((prev) => prev + 24)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#14141c] border border-white/[0.08] hover:border-yellow-400 text-yellow-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#14141c] border border-white/[0.08] hover:border-yellow-400 text-yellow-400 font-semibold transition-all hover:bg-zinc-800 shadow-lg text-sm cursor-pointer"
                 >
                   <ChevronDown className="w-4 h-4" />
                   Carregar mais avaliações ({totalCount - visibleLimit} restantes)
@@ -670,6 +877,21 @@ export const RatingsPage: React.FC = () => {
           initialRating={editingItem.rating}
           initialComment={editingItem.comment || ''}
           initialRewatchCount={editingItem.rewatchCount || 0}
+          onSuccess={loadRatings}
+        />
+      )}
+
+      {editingEpisode && (
+        <EpisodeRatingModal
+          isOpen={!!editingEpisode}
+          onClose={() => setEditingEpisode(null)}
+          serieId={editingEpisode.serieId}
+          seasonNumber={editingEpisode.seasonNumber}
+          episodeNumber={editingEpisode.episodeNumber}
+          episodeTitle={editingEpisode.episodeTitle}
+          serieTitle={editingEpisode.serieTitle}
+          initialRating={editingEpisode.rating}
+          initialComment={editingEpisode.comment || ''}
           onSuccess={loadRatings}
         />
       )}

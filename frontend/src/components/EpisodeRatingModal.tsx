@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MessageSquare } from 'lucide-react';
+import { X, Star, MessageSquare, Trash2 } from 'lucide-react';
 import { ratingApi } from '../services/api';
 import { toast } from 'sonner';
 
 interface EpisodeRatingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  serieId: number;
+  serieId: number | string;
   seasonNumber: number;
   episodeNumber: number;
   episodeTitle?: string;
+  serieTitle?: string;
   initialRating?: number;
   initialComment?: string;
   onSuccess?: () => void;
@@ -22,6 +23,7 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
   seasonNumber,
   episodeNumber,
   episodeTitle = '',
+  serieTitle = '',
   initialRating = 0,
   initialComment = '',
   onSuccess,
@@ -30,6 +32,7 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [comment, setComment] = useState(initialComment);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -56,7 +59,7 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
     setSubmitting(true);
     try {
       await ratingApi.rateEpisode({
-        serieId,
+        serieId: Number(serieId),
         seasonNumber,
         episodeNumber,
         rating,
@@ -72,6 +75,22 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm(`Tem certeza de que deseja remover a avaliação do episódio T${seasonNumber} E${episodeNumber}?`)) return;
+
+    setDeleting(true);
+    try {
+      await ratingApi.deleteEpisodeRating(serieId, seasonNumber, episodeNumber);
+      toast.info('Avaliação do episódio removida');
+      onSuccess?.();
+      onClose();
+    } catch {
+      toast.error('Erro ao remover avaliação do episódio');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const displayRating = hoverRating !== null ? hoverRating : rating;
 
   return (
@@ -79,10 +98,17 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
       <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-2xl max-h-[90dvh] overflow-y-auto">
         <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800">
           <div>
-            <h3 className="text-base font-bold text-white">
-              Avaliar T{seasonNumber} E{episodeNumber}
-            </h3>
-            <p className="text-xs text-zinc-400 truncate max-w-xs">{episodeTitle}</p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-bold text-white">
+                Avaliar T{seasonNumber} E{episodeNumber}
+              </h3>
+              {serieTitle && (
+                <span className="text-xs text-indigo-400 font-semibold truncate max-w-[180px]">
+                  · {serieTitle}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-zinc-400 truncate max-w-xs">{episodeTitle || `Episódio ${episodeNumber}`}</p>
           </div>
           <button
             onClick={onClose}
@@ -175,21 +201,37 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || rating <= 0}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
-            >
-              {submitting ? 'Salvando...' : 'Salvar Nota'}
-            </button>
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-800/60 mt-4">
+            <div>
+              {initialRating > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting || submitting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                  title="Remover avaliação deste episódio"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{deleting ? 'Removendo...' : 'Remover'}</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || deleting || rating <= 0}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+              >
+                {submitting ? 'Salvando...' : 'Salvar Nota'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

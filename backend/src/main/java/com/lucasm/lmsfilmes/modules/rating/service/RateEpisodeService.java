@@ -48,6 +48,13 @@ public class RateEpisodeService {
         return episodeRatingRepository.findByUserIdAndSerieIdOrderBySeasonNumberAscEpisodeNumberAsc(userId, serieId);
     }
 
+    public List<RatingEpisode> getAllUserRatedEpisodes(String email) {
+        Long userId = authService.getUserIdByIdentifier(email);
+        if (userId == null) return List.of();
+
+        return episodeRatingRepository.findByUserIdOrderByIdDesc(userId);
+    }
+
     public List<RatingEpisode> getSeasonEpisodeRatings(String serieId, int seasonNumber, String email) {
         Long userId = authService.getUserIdByIdentifier(email);
         if (userId == null) return List.of();
