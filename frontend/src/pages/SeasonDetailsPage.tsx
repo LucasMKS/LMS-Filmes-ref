@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { serieApi, watchedEpisodeApi, ratingApi } from '../services/api';
-import { SeasonDetail, EpisodeRatingResponse } from '../types';
-import { EpisodeRatingModal } from '../components/EpisodeRatingModal';
+import { SeasonDetail, EpisodeRatingResponse, TmdbEpisode } from '../types';
+import { EpisodeRatingModal, isEpisodeReleased } from '../components/EpisodeRatingModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { 
   ArrowLeft, 
@@ -31,6 +31,7 @@ export const SeasonDetailsPage: React.FC = () => {
   const [selectedEpisode, setSelectedEpisode] = useState<{
     number: number;
     title: string;
+    airDate?: string | null;
     rating?: number;
     comment?: string;
   } | null>(null);
@@ -85,13 +86,19 @@ export const SeasonDetailsPage: React.FC = () => {
     }
   };
 
-  const handleToggleWatched = async (episodeNumber: number) => {
+  const handleToggleWatched = async (episodeNumber: number, airDate?: string | null) => {
     if (!isAuthenticated) {
       toast.error('Faça login para marcar episódios como assistidos');
       return;
     }
 
     const isWatched = !!watchedMap[episodeNumber];
+
+    if (!isWatched && !isEpisodeReleased(airDate)) {
+      toast.warning('Este episódio ainda não foi lançado. Não é possível marcá-lo como assistido.');
+      return;
+    }
+
     try {
       if (isWatched) {
         await watchedEpisodeApi.unmarkWatched(serieId, seasonNum, episodeNumber);
@@ -111,11 +118,41 @@ export const SeasonDetailsPage: React.FC = () => {
     }
   };
 
+  const handleOpenRatingModal = (ep: TmdbEpisode) => {
+    if (!isAuthenticated) {
+      toast.error('Faça login para avaliar episódios');
+      return;
+    }
+
+    const ratingObj = ratingsMap[ep.episode_number];
+    const isReleased = isEpisodeReleased(ep.air_date);
+
+    if (!isReleased && !ratingObj) {
+      toast.warning('Este episódio ainda não foi lançado. Não é possível avaliá-lo.');
+      return;
+    }
+
+    setSelectedEpisode({
+      number: ep.episode_number,
+      title: ep.name,
+      airDate: ep.air_date,
+      rating: ratingObj?.rating,
+      comment: ratingObj?.comment,
+    });
+  };
+
   const handleMarkAllSeason = async () => {
     if (!isAuthenticated || !season?.episodes) return;
 
+    const releasedEpisodes = season.episodes.filter((ep) => isEpisodeReleased(ep.air_date));
+
+    if (releasedEpisodes.length === 0) {
+      toast.warning('Nenhum episódio desta temporada foi lançado ainda.');
+      return;
+    }
+
     try {
-      const promises = season.episodes.map((ep) =>
+      const promises = releasedEpisodes.map((ep) =>
         watchedEpisodeApi.markWatched({
           serieId,
           seasonNumber: seasonNum,
@@ -123,12 +160,20 @@ export const SeasonDetailsPage: React.FC = () => {
         })
       );
       await Promise.all(promises);
-      const newMap: Record<number, boolean> = {};
-      season.episodes.forEach((ep) => {
+      const newMap: Record<number, boolean> = { ...watchedMap };
+      releasedEpisodes.forEach((ep) => {
         newMap[ep.episode_number] = true;
       });
       setWatchedMap(newMap);
-      toast.success('Todos os episódios da temporada marcados como assistidos!');
+
+      if (releasedEpisodes.length < season.episodes.length) {
+        const unreleasedCount = season.episodes.length - releasedEpisodes.length;
+        toast.success(
+          `${releasedEpisodes.length} episódios lançados marcados como assistidos (${unreleasedCount} ainda não lançados).`
+        );
+      } else {
+        toast.success('Todos os episódios da temporada marcados como assistidos!');
+      }
     } catch (err) {
       toast.error('Erro ao marcar temporada como assistida');
     }
@@ -214,6 +259,7 @@ export const SeasonDetailsPage: React.FC = () => {
           {season.episodes?.map((ep) => {
             const isWatched = !!watchedMap[ep.episode_number];
             const ratingObj = ratingsMap[ep.episode_number];
+            const isReleased = isEpisodeReleased(ep.air_date);
 
             return (
               <div
@@ -244,24 +290,45 @@ export const SeasonDetailsPage: React.FC = () => {
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-base font-bold text-white">
-                        {ep.episode_number}. {ep.name}
-                      </h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-base font-bold text-white">
+                          {ep.episode_number}. {ep.name}
+                        </h3>
+                        {!isReleased && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                            Não lançado
+                          </span>
+                        )}
+                      </div>
 
                       {/* Watched Checkbox Button */}
                       <button
-                        onClick={() => handleToggleWatched(ep.episode_number)}
+                        onClick={() => handleToggleWatched(ep.episode_number, ep.air_date)}
+                        disabled={!isReleased && !isWatched}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           isWatched
-                            ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/25'
-                            : 'bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700'
+                            ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/25 cursor-pointer'
+                            : !isReleased
+                            ? 'bg-zinc-800/40 text-zinc-600 border border-zinc-800/60 cursor-not-allowed opacity-60'
+                            : 'bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700 cursor-pointer'
                         }`}
-                        title={isWatched ? 'Marcar como não assistido' : 'Marcar como assistido'}
+                        title={
+                          isWatched
+                            ? 'Marcar como não assistido'
+                            : !isReleased
+                            ? 'Este episódio ainda não foi lançado'
+                            : 'Marcar como assistido'
+                        }
                       >
                         {isWatched ? (
                           <>
                             <CheckCircle2 className="w-4 h-4 fill-indigo-500/20 text-indigo-400" />
                             Assistido
+                          </>
+                        ) : !isReleased ? (
+                          <>
+                            <Circle className="w-4 h-4" />
+                            Não Lançado
                           </>
                         ) : (
                           <>
@@ -302,19 +369,20 @@ export const SeasonDetailsPage: React.FC = () => {
                         )}
                       </div>
                     ) : (
-                      <span className="text-[11px] text-zinc-500">Ainda não avaliado</span>
+                      <span className="text-[11px] text-zinc-500">
+                        {!isReleased ? 'Lançamento futuro' : 'Ainda não avaliado'}
+                      </span>
                     )}
 
                     <button
-                      onClick={() =>
-                        setSelectedEpisode({
-                          number: ep.episode_number,
-                          title: ep.name,
-                          rating: ratingObj?.rating,
-                          comment: ratingObj?.comment,
-                        })
-                      }
-                      className="px-2.5 py-1 text-xs font-semibold text-zinc-300 hover:text-indigo-300 bg-zinc-800/80 hover:bg-zinc-800 rounded-lg transition-colors border border-zinc-700/60"
+                      onClick={() => handleOpenRatingModal(ep)}
+                      disabled={!isReleased && !ratingObj}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors border ${
+                        !isReleased && !ratingObj
+                          ? 'text-zinc-600 bg-zinc-850/50 border-zinc-800 cursor-not-allowed opacity-50'
+                          : 'text-zinc-300 hover:text-indigo-300 bg-zinc-800/80 hover:bg-zinc-800 border-zinc-700/60 cursor-pointer'
+                      }`}
+                      title={!isReleased && !ratingObj ? 'Episódio ainda não lançado' : undefined}
                     >
                       {ratingObj ? 'Editar Nota' : 'Avaliar Episódio'}
                     </button>
@@ -335,6 +403,8 @@ export const SeasonDetailsPage: React.FC = () => {
           seasonNumber={seasonNum}
           episodeNumber={selectedEpisode.number}
           episodeTitle={selectedEpisode.title}
+          serieTitle={season.name}
+          airDate={selectedEpisode.airDate}
           initialRating={selectedEpisode.rating || 0}
           initialComment={selectedEpisode.comment || ''}
           onSuccess={loadUserData}

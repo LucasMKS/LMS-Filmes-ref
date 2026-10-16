@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, MessageSquare, Trash2 } from 'lucide-react';
+import { X, Star, MessageSquare, Trash2, AlertCircle } from 'lucide-react';
 import { ratingApi } from '../services/api';
 import { toast } from 'sonner';
+
+export const isEpisodeReleased = (airDate?: string | null): boolean => {
+  if (!airDate) return false;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const todayLocalStr = `${year}-${month}-${day}`;
+  return airDate <= todayLocalStr;
+};
 
 interface EpisodeRatingModalProps {
   isOpen: boolean;
@@ -11,6 +21,7 @@ interface EpisodeRatingModalProps {
   episodeNumber: number;
   episodeTitle?: string;
   serieTitle?: string;
+  airDate?: string | null;
   initialRating?: number;
   initialComment?: string;
   onSuccess?: () => void;
@@ -24,6 +35,7 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
   episodeNumber,
   episodeTitle = '',
   serieTitle = '',
+  airDate,
   initialRating = 0,
   initialComment = '',
   onSuccess,
@@ -33,6 +45,9 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
   const [comment, setComment] = useState(initialComment);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const isReleased = airDate ? isEpisodeReleased(airDate) : true;
+  const isBlocked = !isReleased && initialRating <= 0;
 
   useEffect(() => {
     if (isOpen) {
@@ -51,6 +66,10 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isBlocked) {
+      toast.warning('Este episódio ainda não foi lançado. Não é possível avaliá-lo.');
+      return;
+    }
     if (rating <= 0) {
       toast.error('Selecione uma nota válida');
       return;
@@ -119,6 +138,16 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-3 sm:pt-4">
+          {isBlocked && (
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>
+                Este episódio ainda não foi lançado{airDate ? ` (estreia prevista para ${new Date(airDate + 'T00:00:00').toLocaleDateString('pt-BR')})` : ''}.
+                Avaliações ficam liberadas após o lançamento.
+              </span>
+            </div>
+          )}
+
           <div className="flex flex-col items-center justify-center gap-3">
             <div className="flex items-center gap-0.5 sm:gap-1 p-1.5 sm:p-2 rounded-2xl bg-zinc-900/60 border border-white/[0.05] max-w-full overflow-x-auto">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starVal) => {
@@ -226,8 +255,8 @@ export const EpisodeRatingModal: React.FC<EpisodeRatingModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={submitting || deleting || rating <= 0}
-                className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+                disabled={submitting || deleting || rating <= 0 || isBlocked}
+                className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20 cursor-pointer disabled:cursor-not-allowed"
               >
                 {submitting ? 'Salvando...' : 'Salvar Nota'}
               </button>
