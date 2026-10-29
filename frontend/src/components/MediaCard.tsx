@@ -59,10 +59,14 @@ export const MediaCard: React.FC<MediaCardProps> = ({
 
   const [loadingFav, setLoadingFav] = useState(false);
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  const imageUrl = posterPath
-    ? `https://image.tmdb.org/t/p/w500${posterPath}`
-    : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
+  // w342 é ~50% mais leve que w500, garantindo nitidez máxima no mobile sem pesar na rede
+  const posterSrc = posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : null;
+  const posterSrcSet = posterPath
+    ? `https://image.tmdb.org/t/p/w342${posterPath} 1x, https://image.tmdb.org/t/p/w500${posterPath} 2x`
+    : undefined;
 
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
   const detailUrl = type === 'movie' ? `/filmes/${id}` : `/series/${id}`;
@@ -122,14 +126,31 @@ export const MediaCard: React.FC<MediaCardProps> = ({
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 z-30" />
 
       {/* Poster Container */}
-      <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5">
+      <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-900">
         <Link to={detailUrl} className="block w-full h-full">
-          <img
-            src={imageUrl}
-            alt={title}
-            loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
+          {posterSrc && !imgError ? (
+            <img
+              src={posterSrc}
+              srcSet={posterSrcSet}
+              alt={title}
+              loading="lazy"
+              decoding="async"
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+              className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                imgLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-zinc-900 border border-white/5 select-none">
+              {type === 'movie' ? (
+                <Film className="w-10 h-10 mb-2 text-indigo-400/40" />
+              ) : (
+                <Tv className="w-10 h-10 mb-2 text-violet-400/40" />
+              )}
+              <span className="text-xs font-medium text-zinc-400 line-clamp-2 px-1">{title}</span>
+            </div>
+          )}
         </Link>
 
         {/* Gradient dark overlay */}

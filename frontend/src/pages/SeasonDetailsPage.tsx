@@ -234,7 +234,7 @@ export const SeasonDetailsPage: React.FC = () => {
           {season.poster_path && (
             <div className="w-36 flex-shrink-0 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
               <img
-                src={`https://image.tmdb.org/t/p/w300${season.poster_path}`}
+                src={`https://image.tmdb.org/t/p/w342${season.poster_path}`}
                 alt={season.name}
                 className="w-full h-auto object-cover"
               />

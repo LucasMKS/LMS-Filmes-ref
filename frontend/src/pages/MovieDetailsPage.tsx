@@ -194,7 +194,7 @@ export const MovieDetailsPage: React.FC = () => {
         <div
           className="absolute inset-0 bg-cover bg-center filter blur-[2px] scale-105"
           style={{
-            backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path || movie.poster_path})`,
+            backgroundImage: `url(https://image.tmdb.org/t/p/w1280${movie.backdrop_path || movie.poster_path})`,
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />

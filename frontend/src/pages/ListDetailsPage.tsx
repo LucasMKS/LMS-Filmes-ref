@@ -507,7 +507,7 @@ export const ListDetailsPage: React.FC = () => {
                       const inList = loadedMedia.some((m) => m.id === result.id && m.type === result.type);
                       const posterUrl = result.posterPath
                         ? `https://image.tmdb.org/t/p/w92${result.posterPath}`
-                        : '/placeholder-movie.jpg';
+                        : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=200';
 
                       return (
                         <div
@@ -763,8 +763,8 @@ export const ListDetailsPage: React.FC = () => {
                   <img
                     src={
                       actor.profile_path
-                        ? `https://image.tmdb.org/t/p/w300${actor.profile_path}`
-                        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300'
+                        ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
                     }
                     alt={actor.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"

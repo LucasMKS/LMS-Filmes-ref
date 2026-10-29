@@ -190,13 +190,13 @@ export const ListsPage: React.FC = () => {
   // Helper para URL de poster/backdrop
   const getMediaImageUrl = (item: CustomListItem, preferBackdrop = false) => {
     const path = preferBackdrop ? item.backdropPath || item.posterPath : item.posterPath || item.backdropPath;
-    if (!path) return '/placeholder-movie.jpg';
+    if (!path) return 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=500';
     return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w500${path}`;
   };
 
   const getActorImageUrl = (item: ActorListItem) => {
-    if (!item.profilePath) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300';
-    return item.profilePath.startsWith('http') ? item.profilePath : `https://image.tmdb.org/t/p/w300${item.profilePath}`;
+    if (!item.profilePath) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+    return item.profilePath.startsWith('http') ? item.profilePath : `https://image.tmdb.org/t/p/w185${item.profilePath}`;
   };
 
   // Renderizador de capas dinâmicas (idêntico ao LMS-Filmes antigo)

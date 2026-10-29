@@ -63,18 +63,18 @@ export const MOVIE_CATEGORIES: CategoryFilterItem[] = [
   { id: 'western', label: 'Faroeste', genreIds: [37] },
 ];
 
-// Sugestões populares iniciais para adicionar rapidamente
+// Sugestões populares iniciais para adicionar rapidamente (com paths TMDB verificados e atualizados)
 const POPULAR_SUGGESTIONS: Array<{ id: number; name: string; department: string; profile_path: string | null }> = [
   { id: 6193, name: 'Leonardo DiCaprio', department: 'Atuação', profile_path: '/wo2hJpn04vbtmh0B9utCFdsQhxM.jpg' },
-  { id: 2037, name: 'Cillian Murphy', department: 'Atuação', profile_path: '/dm6V2YvWBC91GzVvdffmP32mDcl.jpg' },
-  { id: 505710, name: 'Zendaya', department: 'Atuação', profile_path: '/3TE2HnlFkMnvFm1d99k8F7yJ02B.jpg' },
-  { id: 73457, name: 'Wagner Moura', department: 'Atuação', profile_path: '/4Pz96pYJ5aFzPjB8HspFhLwL8j9.jpg' },
-  { id: 1253360, name: 'Pedro Pascal', department: 'Atuação', profile_path: '/9vyK79yqGgDvy3pGjS5N5vA8mX1.jpg' },
+  { id: 2037, name: 'Cillian Murphy', department: 'Atuação', profile_path: '/2lKs67r7FI4bPu0AXxMUJZxmUXn.jpg' },
+  { id: 505710, name: 'Zendaya', department: 'Atuação', profile_path: '/qGkBlyn1AwQpuFnRARMRwj0iHZp.jpg' },
+  { id: 52583, name: 'Wagner Moura', department: 'Atuação', profile_path: '/53IbAed4t1dOWxY3iygbRYZBBnm.jpg' },
+  { id: 1253360, name: 'Pedro Pascal', department: 'Atuação', profile_path: '/oKcMbVn0NJTNzQt0ClKKvVXkm60.jpg' },
   { id: 17419, name: 'Bryan Cranston', department: 'Atuação', profile_path: '/7Jahy5LZX2Fo8fGJltMreAI49hC.jpg' },
-  { id: 1245, name: 'Scarlett Johansson', department: 'Atuação', profile_path: '/6NsMbJXRlDZuDzatN2akFdGuTvx.jpg' },
-  { id: 234352, name: 'Margot Robbie', department: 'Atuação', profile_path: '/euDPyqLnuUMBGxYooEtNuAhXYAc.jpg' },
-  { id: 6384, name: 'Keanu Reeves', department: 'Atuação', profile_path: '/4D0PpNI0kmP58hgrwGC3wC5x0Vy.jpg' },
-  { id: 54693, name: 'Emma Stone', department: 'Atuação', profile_path: '/cW0nBv3t8KxZ2A7uJ4iT6L6lYQz.jpg' },
+  { id: 1245, name: 'Scarlett Johansson', department: 'Atuação', profile_path: '/tgxYh3jMs5bY2Ub4d2dcp9iaz1R.jpg' },
+  { id: 234352, name: 'Margot Robbie', department: 'Atuação', profile_path: '/euDPyqLnuwaWMHajcU3oZ9uZezR.jpg' },
+  { id: 6384, name: 'Keanu Reeves', department: 'Atuação', profile_path: '/8RZLOyYGsoRe9p44q3xin9QkMHv.jpg' },
+  { id: 54693, name: 'Emma Stone', department: 'Atuação', profile_path: '/ak2Y9wOI3wi2pNQU6OWSvVvWPj5.jpg' },
 ];
 
 type RecommendationTab = 'recommended' | 'crossover' | 'popular' | 'top_rated' | 'gems' | 'recent';
@@ -155,6 +155,41 @@ export const isTalkShow = (item: any): boolean => {
   return false;
 };
 
+const ACTORS_FILTERS_KEY = 'lms_actors_page_filters';
+
+interface SavedActorsFilters {
+  mainView?: 'my_lists' | 'explore';
+  displayMode?: 'productions' | 'actors_simple';
+  activeTab?: RecommendationTab;
+  mediaTypeFilter?: MediaTypeOption;
+  minRating?: number;
+  titleFilter?: string;
+  selectedCategory?: string;
+  simpleActorSearch?: string;
+  selectedListId?: number | null;
+}
+
+const getSavedActorsFilters = (): SavedActorsFilters => {
+  try {
+    const raw = sessionStorage.getItem(ACTORS_FILTERS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveActorsFilters = (filters: Partial<SavedActorsFilters>) => {
+  try {
+    const current = getSavedActorsFilters();
+    sessionStorage.setItem(ACTORS_FILTERS_KEY, JSON.stringify({ ...current, ...filters }));
+  } catch (e) {
+    console.warn('Erro ao salvar filtros de atores no sessionStorage:', e);
+  }
+};
+
+// Cache em memória de créditos por ator para navegação instantânea (ao voltar de filmes/séries)
+const actorCreditsCache: Record<number, TmdbCreditItem[]> = {};
+
 export const ActorsPage: React.FC = () => {
   const { id: paramListId } = useParams<{ id?: string }>();
   const navigate = useNavigate();
@@ -162,16 +197,22 @@ export const ActorsPage: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
   const { movieRatings, serieRatings } = useUserRatingsStore();
 
+  const savedFilters = useMemo(() => getSavedActorsFilters(), []);
+
   // Modo Principal: 'my_lists' (Listas de Atores) ou 'explore' (Catálogo TMDB)
-  const [mainView, setMainView] = useState<'my_lists' | 'explore'>('my_lists');
+  const [mainView, setMainView] = useState<'my_lists' | 'explore'>(() => savedFilters.mainView || 'my_lists');
 
   // Modo de Exibição dentro da lista: 'productions' (Filmes & Séries) ou 'actors_simple' (Atores Simplificado)
-  const [displayMode, setDisplayMode] = useState<'productions' | 'actors_simple'>('productions');
-  const [simpleActorSearch, setSimpleActorSearch] = useState('');
+  const [displayMode, setDisplayMode] = useState<'productions' | 'actors_simple'>(() => savedFilters.displayMode || 'productions');
+  const [simpleActorSearch, setSimpleActorSearch] = useState(() => savedFilters.simpleActorSearch || '');
 
   // --- ESTADO PARA LISTAS DE ATORES ---
   const [actorLists, setActorLists] = useState<ActorList[]>([]);
-  const [selectedListId, setSelectedListId] = useState<number | null>(paramListId ? Number(paramListId) : null);
+  const [selectedListId, setSelectedListId] = useState<number | null>(() => {
+    if (paramListId) return Number(paramListId);
+    if (savedFilters.selectedListId) return savedFilters.selectedListId;
+    return null;
+  });
   const [isLoadingLists, setIsLoadingLists] = useState(true);
 
   // Modais de Criação, Edição e Exclusão
@@ -194,17 +235,42 @@ export const ActorsPage: React.FC = () => {
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  // Créditos TMDB por Ator (cache em memória)
-  const [actorCreditsMap, setActorCreditsMap] = useState<Record<number, TmdbCreditItem[]>>({});
+  // Créditos TMDB por Ator (cache em memória para retorno instantâneo)
+  const [actorCreditsMap, setActorCreditsMap] = useState<Record<number, TmdbCreditItem[]>>(() => ({ ...actorCreditsCache }));
   const [loadingCreditsMap, setLoadingCreditsMap] = useState<Record<number, boolean>>({});
 
   // Filtros e Visualização das Recomendações
-  const [activeTab, setActiveTab] = useState<RecommendationTab>('recommended');
-  const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeOption>('all');
-  const [minRating, setMinRating] = useState<number>(0);
-  const [titleFilter, setTitleFilter] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<RecommendationTab>(() => savedFilters.activeTab || 'recommended');
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeOption>(() => savedFilters.mediaTypeFilter || 'all');
+  const [minRating, setMinRating] = useState<number>(() => (savedFilters.minRating !== undefined ? savedFilters.minRating : 0));
+  const [titleFilter, setTitleFilter] = useState(() => savedFilters.titleFilter || '');
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => savedFilters.selectedCategory || 'all');
   const [visibleCount, setVisibleCount] = useState(18);
+
+  // Persiste filtros sempre que houver alterações
+  useEffect(() => {
+    saveActorsFilters({
+      mainView,
+      displayMode,
+      activeTab,
+      mediaTypeFilter,
+      minRating,
+      titleFilter,
+      selectedCategory,
+      simpleActorSearch,
+      selectedListId,
+    });
+  }, [
+    mainView,
+    displayMode,
+    activeTab,
+    mediaTypeFilter,
+    minRating,
+    titleFilter,
+    selectedCategory,
+    simpleActorSearch,
+    selectedListId,
+  ]);
 
 
   // --- ESTADO PARA MODO EXPLORAR CATÁLOGO ---
@@ -257,9 +323,14 @@ export const ActorsPage: React.FC = () => {
           setSelectedListId(lists[0].id);
           navigate(`/listas/atores/${lists[0].id}`, { replace: true });
         }
-      } else if (lists.length > 0 && !selectedListId) {
-        setSelectedListId(lists[0].id);
-        navigate(`/listas/atores/${lists[0].id}`, { replace: true });
+      } else if (lists.length > 0) {
+        // Restaura a última lista ativa selecionada pelo usuário a partir do sessionStorage
+        const saved = getSavedActorsFilters();
+        const preferredId = saved.selectedListId && lists.some((l) => l.id === saved.selectedListId)
+          ? saved.selectedListId
+          : lists[0].id;
+        setSelectedListId(preferredId);
+        navigate(`/listas/atores/${preferredId}`, { replace: true });
       }
     } catch (err) {
       console.error('Erro ao buscar listas de atores:', err);
@@ -270,6 +341,7 @@ export const ActorsPage: React.FC = () => {
 
   const handleSelectList = (listId: number) => {
     setSelectedListId(listId);
+    saveActorsFilters({ selectedListId: listId });
     navigate(`/listas/atores/${listId}`);
   };
 
@@ -313,6 +385,10 @@ export const ActorsPage: React.FC = () => {
   }, [selectedActors, actorCreditsMap, loadingCreditsMap]);
 
   const fetchActorCredits = async (actorId: number) => {
+    if (actorCreditsCache[actorId]) {
+      setActorCreditsMap((prev) => ({ ...prev, [actorId]: actorCreditsCache[actorId] }));
+      return;
+    }
     setLoadingCreditsMap((prev) => ({ ...prev, [actorId]: true }));
     try {
       const res = await actorApi.getCredits(actorId);
@@ -320,6 +396,7 @@ export const ActorsPage: React.FC = () => {
         ...item,
         media_type: (item.media_type || (item.first_air_date ? 'tv' : 'movie')) as 'movie' | 'tv',
       }));
+      actorCreditsCache[actorId] = castItems;
       setActorCreditsMap((prev) => ({ ...prev, [actorId]: castItems }));
     } catch (e) {
       console.error(`Erro ao carregar créditos do ator ${actorId}:`, e);
@@ -1224,8 +1301,8 @@ export const ActorsPage: React.FC = () => {
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5">
                         {simplifiedActors.map((actor) => {
                           const avatarUrl = actor.profile_path
-                            ? `https://image.tmdb.org/t/p/w300${actor.profile_path}`
-                            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300';
+                            ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
 
                           return (
                             <div
@@ -1594,14 +1671,20 @@ export const ActorsPage: React.FC = () => {
                             );
                           })}
 
-                          {selectedCategory !== 'all' && (
+                          {(selectedCategory !== 'all' || minRating > 0 || mediaTypeFilter !== 'all' || titleFilter || activeTab !== 'recommended') && (
                             <button
-                              onClick={() => setSelectedCategory('all')}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-white/40 hover:text-amber-400 transition-colors shrink-0 cursor-pointer"
-                              title="Limpar filtro de categoria"
+                              onClick={() => {
+                                setSelectedCategory('all');
+                                setMinRating(0);
+                                setMediaTypeFilter('all');
+                                setTitleFilter('');
+                                setActiveTab('recommended');
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20 transition-all shrink-0 cursor-pointer"
+                              title="Limpar todos os filtros aplicados"
                             >
-                              <X className="w-3 h-3" />
-                              <span>Limpar</span>
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Redefinir Filtros</span>
                             </button>
                           )}
                         </div>
@@ -1774,11 +1857,12 @@ export const ActorsPage: React.FC = () => {
                       <img
                         src={
                           actor.profile_path
-                            ? `https://image.tmdb.org/t/p/w300${actor.profile_path}`
-                            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300'
+                            ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
                         }
                         alt={actor.name}
                         loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
@@ -1855,10 +1939,11 @@ export const ActorsPage: React.FC = () => {
                   <img
                     src={
                       randomItem.poster_path
-                        ? `https://image.tmdb.org/t/p/w300${randomItem.poster_path}`
-                        : '/placeholder-movie.jpg'
+                        ? `https://image.tmdb.org/t/p/w342${randomItem.poster_path}`
+                        : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=300'
                     }
                     alt={randomItem.title || randomItem.name || ''}
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 </div>
