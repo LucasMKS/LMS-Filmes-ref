@@ -87,8 +87,8 @@ export const ActorDetailsPage: React.FC = () => {
   }) || [];
 
   return (
-    <div className="min-h-screen pb-20 pt-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen pb-20 pt-6 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full min-w-0">
         <button
           type="button"
           onClick={() => {
@@ -105,7 +105,7 @@ export const ActorDetailsPage: React.FC = () => {
         </button>
 
         {/* Profile Info */}
-        <div className="flex flex-col md:flex-row gap-8 items-start bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 mb-12">
+        <div className="flex flex-col md:flex-row gap-8 items-start bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 mb-12 w-full min-w-0">
           <div className="w-48 sm:w-60 flex-shrink-0 mx-auto md:mx-0 rounded-2xl overflow-hidden border-2 border-zinc-800 bg-zinc-950">
             <img
               src={
@@ -118,7 +118,7 @@ export const ActorDetailsPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 w-full min-w-0 space-y-4">
             <div>
               <h1 className="text-3xl sm:text-4xl font-black text-white">{actor.name}</h1>
               <p className="text-sm text-zinc-400 mt-1">{actor.known_for_department || 'Ator / Atriz'}</p>

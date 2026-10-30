@@ -204,7 +204,7 @@ export const SerieDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20 w-full max-w-full overflow-x-hidden">
       {/* Backdrop */}
       <div className="relative w-full h-[380px] sm:h-[480px] overflow-hidden">
         <div
@@ -235,10 +235,10 @@ export const SerieDetailsPage: React.FC = () => {
       </div>
 
       {/* Main Info */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-36 sm:-mt-44 relative z-10">
-        <div className="flex flex-col md:flex-row gap-8 items-start">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-36 sm:-mt-44 relative z-10 w-full min-w-0">
+        <div className="flex flex-col md:flex-row gap-8 items-start w-full min-w-0">
           {/* Left Column / Sidebar */}
-          <div className="w-full md:w-64 lg:w-72 flex-shrink-0 space-y-6">
+          <div className="w-full md:w-64 lg:w-72 flex-shrink-0 space-y-6 min-w-0">
             {/* Poster */}
             <div className="w-48 sm:w-56 md:w-full mx-auto rounded-2xl overflow-hidden shadow-2xl border-2 border-zinc-800 bg-zinc-900">
               <img
@@ -396,7 +396,7 @@ export const SerieDetailsPage: React.FC = () => {
           </div>
 
           {/* Right Column / Main details */}
-          <div className="flex-1 min-w-0 space-y-6">
+          <div className="flex-1 w-full min-w-0 space-y-6">
             <div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
                 {serie.name}
@@ -409,7 +409,7 @@ export const SerieDetailsPage: React.FC = () => {
             </div>
 
             {/* Badges / Stats */}
-            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-zinc-300">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-zinc-300 w-full min-w-0">
               <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/30">
                 <Star className="w-4 h-4 fill-amber-400" />
                 <span>{serie.vote_average.toFixed(1)}</span>
@@ -454,7 +454,7 @@ export const SerieDetailsPage: React.FC = () => {
             </div>
 
             {/* Action Bar */}
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-1 w-full min-w-0">
               {/* Rate button with prominent highlight */}
               <button
                 type="button"
@@ -602,9 +602,9 @@ export const SerieDetailsPage: React.FC = () => {
 
             {/* Cast Carousel */}
             {serie.credits?.cast && serie.credits.cast.length > 0 && (
-              <div className="pt-4 w-full max-w-full">
+              <div className="pt-4 w-full min-w-0 max-w-full overflow-hidden">
                 <h3 className="text-xl font-bold text-white mb-4">Elenco Principal</h3>
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-800 horizontal-scroll touch-pan-x max-w-full">
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-zinc-800 horizontal-scroll touch-pan-x w-full max-w-full">
                   {serie.credits.cast.slice(0, 15).map((actor) => (
                     <Link
                       key={actor.id}
@@ -636,9 +636,9 @@ export const SerieDetailsPage: React.FC = () => {
 
         {/* Recommendations */}
         {recommendations.length > 0 && (
-          <div className="mt-16">
+          <div className="mt-16 w-full min-w-0">
             <h3 className="text-xl font-bold text-white mb-4">Séries Semelhantes</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 w-full">
               {recommendations.slice(0, 6).map((rec) => (
                 <MediaCard
                   key={rec.id}

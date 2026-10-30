@@ -199,8 +199,8 @@ export const SeasonDetailsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20 pt-6">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen pb-20 pt-6 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full min-w-0">
         {/* Navigation & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <button
@@ -230,9 +230,9 @@ export const SeasonDetailsPage: React.FC = () => {
         </div>
 
         {/* Season Header Banner */}
-        <div className="flex flex-col md:flex-row gap-6 items-start bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 mb-8">
+        <div className="flex flex-col md:flex-row gap-6 items-start bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-6 mb-8 w-full min-w-0">
           {season.poster_path && (
-            <div className="w-36 flex-shrink-0 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
+            <div className="w-36 flex-shrink-0 mx-auto md:mx-0 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
               <img
                 src={`https://image.tmdb.org/t/p/w342${season.poster_path}`}
                 alt={season.name}
@@ -240,7 +240,7 @@ export const SeasonDetailsPage: React.FC = () => {
               />
             </div>
           )}
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 w-full min-w-0 space-y-2">
             <h1 className="text-2xl sm:text-3xl font-black text-white">{season.name}</h1>
             <p className="text-xs text-zinc-400">
               Total de {season.episodes?.length || 0} episódios •{' '}
